@@ -37,6 +37,15 @@ const admin = (req, res, next) => {
   }
 };
 
+// Volunteer only middleware
+const volunteer = (req, res, next) => {
+  if (req.user && req.user.role === 'volunteer') {
+    next();
+  } else {
+    res.status(401).json({ message: 'Not authorized as a volunteer' });
+  }
+};
+
 // Role-based access control middleware
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -49,4 +58,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, admin, authorize };
+module.exports = { protect, admin, volunteer, authorize };
