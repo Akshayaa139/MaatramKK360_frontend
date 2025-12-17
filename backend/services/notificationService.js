@@ -1,143 +1,152 @@
-const sgMail = require('@sendgrid/mail');
-const twilio = require('twilio');
+const nodemailer = require('nodemailer');
 
-// Configure SendGrid
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-// Configure Twilio
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+function buildTransport(alias) {
+  const map = {
+    notifications: {
+      user: process.env.MAIL_KK_NOTIFICATIONS_USER,
+      pass: process.env.MAIL_KK_NOTIFICATIONS_PASS,
+      from: process.env.MAIL_KK_NOTIFICATIONS_FROM || process.env.MAIL_DEFAULT_FROM
+    },
+    admin: {
+      user: process.env.MAIL_KK_ADMIN_USER,
+      pass: process.env.MAIL_KK_ADMIN_PASS,
+      from: process.env.MAIL_KK_ADMIN_FROM || process.env.MAIL_DEFAULT_FROM
+    },
+    students: {
+      user: process.env.MAIL_KK_STUDENTS_USER,
+      pass: process.env.MAIL_KK_STUDENTS_PASS,
+      from: process.env.MAIL_KK_STUDENTS_FROM || process.env.MAIL_DEFAULT_FROM
+    },
+    default: {
+      user: process.env.MAIL_DEFAULT_USER,
+      pass: process.env.MAIL_DEFAULT_PASS,
+      from: process.env.MAIL_DEFAULT_FROM
+    }
+  };
+  const cfg = map[alias] || map.default;
+  if (!cfg.user || !cfg.pass) return null;
+  const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST || 'smtp.gmail.com',
+    port: Number(process.env.MAIL_PORT || 587),
+    secure: false,
+    auth: { user: cfg.user, pass: cfg.pass }
+  });
+  return { transporter, from: cfg.from || cfg.user };
+}
 
 class NotificationService {
-  // Send email notification
-  static async sendEmail(to, subject, text, html = null) {
+  static async sendEmail(to, subject, text, html = null, alias = 'default') {
     try {
-      const msg = {
-        to,
-        from: process.env.SENDGRID_FROM_EMAIL,
-        subject,
-        text,
-        html: html || text,
-      };
-
-      await sgMail.send(msg);
-      console.log(`Email sent successfully to ${to}`);
-      return { success: true, message: 'Email sent successfully' };
+      const t = buildTransport(alias);
+      if (!t || !to) return { success: false, error: 'Email disabled or missing recipient' };
+      const info = await t.transporter.sendMail({ to, from: t.from, subject, text, html: html || text });
+      return { success: true, messageId: info.messageId };
     } catch (error) {
-      console.error('Email sending failed:', error);
       return { success: false, error: error.message };
     }
   }
 
-  // Send SMS notification
-  static async sendSMS(to, message) {
-    try {
-      // Ensure phone number is in international format
-      const formattedPhone = to.startsWith('+') ? to : `+91${to}`;
-      
-      const sms = await twilioClient.messages.create({
-        body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: formattedPhone,
-      });
-
-      console.log(`SMS sent successfully to ${formattedPhone}`);
-      return { success: true, message: 'SMS sent successfully', messageId: sms.sid };
-    } catch (error) {
-      console.error('SMS sending failed:', error);
-      return { success: false, error: error.message };
-    }
+  static async sendOTPEmail(to, otp, alias = 'notifications') {
+    const subject = 'Your One-Time Password (OTP)';
+    const text = `Your OTP is ${otp}. It expires in 10 minutes.`;
+    const html = `<p>Your OTP is <strong>${otp}</strong>. It expires in 10 minutes.</p>`;
+    return this.sendEmail(to, subject, text, html, alias);
   }
 
-  // Send application submission confirmation
   static async sendApplicationConfirmation(application) {
-    const emailSubject = 'Application Submitted Successfully - KK360';
-    const emailText = `
-      Dear ${application.personalInfo.fullName},
-      
-      Your application has been submitted successfully!
-      
-      Application ID: ${application.applicationId}
-      Submission Date: ${new Date(application.submittedAt).toLocaleDateString()}
-      
-      We will review your application and get back to you soon.
-      
-      Best regards,
-      KK360 Team
-    `;
-
-    const smsText = `Your application ${application.applicationId} has been submitted successfully. We will review it and get back to you soon. - KK360`;
-
-    // Send both email and SMS
-    const emailPromise = this.sendEmail(
-      application.personalInfo.email,
-      emailSubject,
-      emailText
-    );
-
-    const smsPromise = this.sendSMS(
-      application.personalInfo.phone,
-      smsText
-    );
-
-    const results = await Promise.allSettled([emailPromise, smsPromise]);
-    return results;
+    try {
+      const fullName = application.personalInfo?.fullName || application.name || 'Student';
+      const email = application.personalInfo?.email || application.email;
+      const applicationId = application.applicationId;
+      const emailSubject = 'Application Submitted Successfully - Karpom Karpippom (KK)';
+      const emailText = `
+        Dear ${fullName},
+        
+        Your application has been submitted successfully!
+        
+        Application ID: ${applicationId}
+        Submission Date: ${new Date().toLocaleDateString()}
+        
+        We will review your application and get back to you soon.
+        
+        Best regards,
+        Karpom Karpippom Team
+      `;
+      const emailHtml = `
+        <h1>Thank you for applying to Karpom Karpippom!</h1>
+        <p>Dear ${fullName},</p>
+        <p>Your application has been received successfully.</p>
+        <p><strong>Application ID: ${applicationId}</strong></p>
+        <p>Submission Date: ${new Date().toLocaleDateString()}</p>
+        <p>We will review your application and get back to you soon.</p>
+        <p>Best regards,<br>Karpom Karpippom Team</p>
+      `;
+      const result = await this.sendEmail(email, emailSubject, emailText, emailHtml, 'students');
+      return result;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
-  // Send status update notification
   static async sendStatusUpdate(application, newStatus) {
-    const statusMessages = {
-      'under_review': 'Your application is under review',
-      'televerification': 'You have been selected for televerification',
-      'panel_interview': 'You have been selected for panel interview',
-      'selected': 'Congratulations! You have been selected',
-      'rejected': 'Your application has been rejected'
-    };
-
-    const emailSubject = `Application Status Update - KK360`;
-    const emailText = `
-      Dear ${application.personalInfo.fullName},
-      
-      Your application status has been updated to: ${statusMessages[newStatus] || newStatus}
-      
-      Application ID: ${application.applicationId}
-      
-      Best regards,
-      KK360 Team
-    `;
-
-    const smsText = `Application ${application.applicationId} status: ${statusMessages[newStatus] || newStatus}. - KK360`;
-
-    const emailPromise = this.sendEmail(
-      application.personalInfo.email,
-      emailSubject,
-      emailText
-    );
-
-    const smsPromise = this.sendSMS(
-      application.personalInfo.phone,
-      smsText
-    );
-
-    const results = await Promise.allSettled([emailPromise, smsPromise]);
-    return results;
-  }
-  }
-
-  // Send application confirmation
-  static async sendApplicationConfirmation(application) {
-    const subject = 'Application Received - Karpom Karpippom';
-    const text = `Thank you for applying to Karpom Karpippom! Your application has been received successfully. Your Application ID is: ${application.applicationId}`;
-    const html = `
-      <h1>Thank you for applying to Karpom Karpippom!</h1>
-      <p>Your application has been received successfully.</p>
-      <p>Your Application ID is: <strong>${application.applicationId}</strong></p>
-      <p>We will review your application and get back to you soon.</p>
-    `;
-
-    await this.sendEmail(application.email, subject, text, html);
-    await this.sendSMS(application.phone, `Hi ${application.name}, your application for Karpom Karpippom has been received. Your Application ID is ${application.applicationId}.`);
+    try {
+      const fullName = application.personalInfo?.fullName || application.name || 'Student';
+      const email = application.personalInfo?.email || application.email;
+      const applicationId = application.applicationId;
+      const statusMessages = {
+        'pending': 'Your application is pending review',
+        'under_review': 'Your application is under review',
+        'tele-verification': 'You have been selected for tele-verification',
+        'televerification': 'You have been selected for tele-verification',
+        'panel-interview': 'You have been selected for panel interview',
+        'panel_interview': 'You have been selected for panel interview',
+        'selected': 'Congratulations! You have been selected',
+        'rejected': 'Your application has been rejected'
+      };
+      const emailSubject = `Application Status Update - Karpom Karpippom`;
+      const emailText = `
+        Dear ${fullName},
+        
+        Your application status has been updated to: ${statusMessages[newStatus] || newStatus}
+        
+        Application ID: ${applicationId}
+        
+        Best regards,
+        Karpom Karpippom Team
+      `;
+      const emailHtml = `
+        <h1>Application Status Update</h1>
+        <p>Dear ${fullName},</p>
+        <p>Your application status has been updated to: <strong>${statusMessages[newStatus] || newStatus}</strong></p>
+        <p>Application ID: <strong>${applicationId}</strong></p>
+        <p>Best regards,<br>Karpom Karpippom Team</p>
+      `;
+      const result = await this.sendEmail(email, emailSubject, emailText, emailHtml, 'students');
+      return result;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
+  static async sendWelcomeEmail(user) {
+    const to = user.email;
+    const subject = 'Welcome to KK360';
+    const text = `Welcome ${user.name || ''} to KK360.`;
+    const html = `<p>Welcome <strong>${user.name || ''}</strong> to KK360.</p>`;
+    return this.sendEmail(to, subject, text, html, 'notifications');
+  }
+
+  static async sendAdminAlert(subject, text, html) {
+    const to = process.env.MAIL_ADMIN_ALERT_TO || process.env.MAIL_KK_ADMIN_USER;
+    return this.sendEmail(to, subject, text, html || text, 'admin');
+  }
+
+  static async sendEventReminder(to, eventTitle, eventDate) {
+    const subject = `Reminder: ${eventTitle}`;
+    const text = `Reminder for ${eventTitle} on ${eventDate}.`;
+    const html = `<p>Reminder for <strong>${eventTitle}</strong> on ${eventDate}.</p>`;
+    return this.sendEmail(to, subject, text, html, 'notifications');
+  }
 }
 
 module.exports = NotificationService;

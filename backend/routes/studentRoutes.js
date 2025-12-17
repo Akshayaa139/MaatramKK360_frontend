@@ -1,8 +1,34 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getStudentsPendingPanel } = require('../controllers/studentController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const {
+  getStudentProfile,
+  getMyClasses,
+  getMyPerformance,
+  getMyProgress,
+  getStudentNotifications,
+} = require("../controllers/studentController");
+const {
+  getAssignmentsForStudent,
+} = require("../controllers/assignmentController");
+const { getTestsForStudent } = require("../controllers/testController");
+const { protect, authorize } = require("../middleware/authMiddleware");
 
-router.route('/pending-panel').get(protect, admin, getStudentsPendingPanel);
+router.get("/profile", protect, authorize("student"), getStudentProfile);
+router.get("/classes", protect, authorize("student"), getMyClasses);
+router.get("/performance", protect, authorize("student"), getMyPerformance);
+router.get("/progress", protect, authorize("student"), getMyProgress);
+router.get("/notifications", protect, authorize("student"), getStudentNotifications);
+router.get(
+  "/assignments/:classId",
+  protect,
+  authorize("student"),
+  getAssignmentsForStudent
+);
+router.get(
+  "/tests/:classId",
+  protect,
+  authorize("student"),
+  getTestsForStudent
+);
 
 module.exports = router;

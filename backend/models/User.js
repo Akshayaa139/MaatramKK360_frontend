@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'lead', 'tutor', 'student'],
+    enum: ['admin', 'lead', 'tutor', 'student', 'volunteer', 'alumni'],
     required: true
   },
   phone: {
@@ -26,9 +26,20 @@ const UserSchema = new mongoose.Schema({
   profilePicture: {
     type: String
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
+  }
+  ,
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
   }
 });
 

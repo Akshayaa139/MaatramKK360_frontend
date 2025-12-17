@@ -7,7 +7,15 @@ const Class = require('../models/Class');
 const getAttendance = async (req, res) => {
   try {
     const { classId } = req.params;
-    const students = await Student.find({ 'attendance.class': classId }).populate('user', 'name');
+    const { date } = req.query;
+    let filter = { 'attendance.class': classId };
+    if (date) {
+      const d = new Date(date);
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+      filter = { 'attendance.class': classId, 'attendance.date': { $gte: start, $lt: end } };
+    }
+    const students = await Student.find(filter).populate('user', 'name');
 
     res.json(students);
   } catch (error) {
@@ -25,10 +33,16 @@ const updateAttendance = async (req, res) => {
     const { attendanceData } = req.body; // Expected format: [{ studentId, status }]
 
     for (const record of attendanceData) {
-      await Student.updateOne(
+      const updated = await Student.updateOne(
         { _id: record.studentId, 'attendance.class': classId },
         { $set: { 'attendance.$.status': record.status } }
       );
+      if (!updated.matchedCount) {
+        await Student.updateOne(
+          { _id: record.studentId },
+          { $push: { attendance: { class: classId, status: record.status || 'absent', date: new Date() } } }
+        );
+      }
     }
 
     res.json({ message: 'Attendance updated successfully' });

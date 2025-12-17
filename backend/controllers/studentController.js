@@ -1,15 +1,186 @@
-const asyncHandler = require('express-async-handler');
+const asyncHandler = require("express-async-handler");
+const User = require("../models/User");
+const Student = require("../models/Student");
+const Class = require("../models/Class");
 
 // @desc    Get students pending panel interview
 // @route   GET /api/students/pending-panel
 // @access  Private/Admin
 const getStudentsPendingPanel = asyncHandler(async (req, res) => {
-    const students = [
-        { id: '1', name: 'Aarav Sharma', applicationStatus: 'Tele-verification complete' },
-        { id: '2', name: 'Diya Patel', applicationStatus: 'Tele-verification complete' },
-        { id: '3', name: 'Rohan Mehta', applicationStatus: 'Tele-verification complete' },
-    ];
-    res.json(students);
+  const applications = await require("../models/Application")
+    .find({ status: { $in: ["tele_verification", "panel_interview"] } })
+    .select("applicationNumber personalInfo educationalInfo status");
+  const result = applications.map((a) => ({
+    id: String(a._id),
+    name: a.personalInfo?.fullName || a.name || "Student",
+    applicationStatus: a.status || "tele_verification",
+  }));
+  res.json(result);
 });
 
-module.exports = { getStudentsPendingPanel };
+const getStudentProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select("-password");
+  const student = await Student.findOne({ user: req.user._id }).populate(
+    "user",
+    "name email phone"
+  );
+  if (!student) return res.status(404).json({ message: "Student not found" });
+  res.json({ user, student });
+});
+
+const getMyClasses = asyncHandler(async (req, res) => {
+  console.log("getMyClasses called for user:", req.user._id);
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) {
+    console.log("Student profile not found for user:", req.user._id);
+    return res.status(404).json({ message: "Student not found" });
+  }
+  console.log("Found student:", student._id);
+  const classes = await Class.find({ students: student._id }).populate({
+    path: "tutor",
+    populate: { path: "user", select: "name email phone" },
+  });
+  console.log("Found classes count:", classes.length);
+  const result = classes.map((c) => ({
+    id: c._id,
+    title: c.title,
+    subject: c.subject,
+    schedule: c.schedule,
+    status: c.status,
+    sessionLink: c.sessionLink,
+    tutor: {
+      id: c.tutor?._id,
+      name: c.tutor?.user?.name || "",
+      email: c.tutor?.user?.email || "",
+      phone: c.tutor?.user?.phone || "",
+    },
+  }));
+  res.json(result);
+});
+
+// @desc    Get aggregated performance by exam type
+// @route   GET /api/students/performance
+// @access  Private/Student
+const getMyPerformance = asyncHandler(async (req, res) => {
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) return res.status(404).json({ message: "Student not found" });
+  const perf = student.performance || [];
+  const agg = {};
+  for (const p of perf) {
+    const type = p.examType || "other";
+    if (!agg[type]) agg[type] = { total: 0, max: 0, count: 0 };
+    agg[type].total += p.score;
+    agg[type].max += p.maxScore;
+    agg[type].count += 1;
+  }
+  const toPct = (o) =>
+    o.count ? Math.round((o.total / o.max) * 100 * 100) / 100 : 0;
+  res.json({
+    mid: toPct(agg["mid"] || { total: 0, max: 0, count: 0 }),
+    quarterly: toPct(agg["quarterly"] || { total: 0, max: 0, count: 0 }),
+    half: toPct(agg["half"] || { total: 0, max: 0, count: 0 }),
+    final: toPct(agg["final"] || { total: 0, max: 0, count: 0 }),
+  });
+});
+
+// @desc    Get aggregated student progress metrics (attendance %, test avg %, trend, composite growth)
+// @route   GET /api/students/progress
+// @access  Private/Student
+const getMyProgress = asyncHandler(async (req, res) => {
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) return res.status(404).json({ message: "Student not found" });
+
+  // attendance % (present / (present + absent))
+  const attendance = Array.isArray(student.attendance)
+    ? student.attendance
+    : [];
+  const presentCount = attendance.filter((a) => a.status === "present").length;
+  const absentCount = attendance.filter((a) => a.status === "absent").length;
+  const attendanceDenom = presentCount + absentCount;
+  const attendanceRate = attendanceDenom
+    ? Math.round((presentCount / attendanceDenom) * 100)
+    : 0;
+
+  // overall test average percent from student.performance
+  const perf = Array.isArray(student.performance) ? student.performance : [];
+  let totalScore = 0,
+    totalMax = 0;
+  for (const p of perf) {
+    totalScore += Number(p.score || 0);
+    totalMax += Number(p.maxScore || 0) || 0;
+  }
+  const testAveragePercent = totalMax
+    ? Math.round((totalScore / totalMax) * 100)
+    : 0;
+
+  // compute simple trend: compare average of last 3 tests vs previous 3 tests
+  const perfSorted = perf
+    .slice()
+    .sort((a, b) => new Date(a.testDate || 0) - new Date(b.testDate || 0));
+  const last3 = perfSorted.slice(-3);
+  const prev3 = perfSorted.slice(-6, -3);
+  const avg = (arr) => {
+    if (!arr || arr.length === 0) return null;
+    let s = 0,
+      m = 0;
+    for (const r of arr) {
+      s += Number(r.score || 0);
+      m += Number(r.maxScore || 0) || 0;
+    }
+    return m ? (s / m) * 100 : null;
+  };
+  const recentAvg = avg(last3);
+  const prevAvg = avg(prev3);
+  let testTrendPercent = null;
+  if (recentAvg !== null && prevAvg !== null && prevAvg !== 0) {
+    testTrendPercent =
+      Math.round(((recentAvg - prevAvg) / prevAvg) * 100 * 100) / 100;
+  } else if (recentAvg !== null && prevAvg === null) {
+    testTrendPercent = null; // not enough history
+  }
+
+  // composite growth: weighted (tests 70%, attendance 30%) using available values
+  const compositeGrowth =
+    Math.round((0.7 * testAveragePercent + 0.3 * attendanceRate) * 100) / 100;
+
+  res.json({
+    attendanceRate,
+    testAveragePercent,
+    testTrendPercent,
+    compositeGrowth,
+  });
+});
+
+// @desc    Get notification counts (assignments/tests due)
+// @route   GET /api/students/notifications
+// @access  Private/Student
+const Assignment = require("../models/Assignment");
+const Test = require("../models/Test");
+const getStudentNotifications = asyncHandler(async (req, res) => {
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) return res.json({ assignments: 0 });
+
+  // Find all classes the student is enrolled in
+  const classes = await Class.find({ students: student._id }).select('_id');
+  const classIds = classes.map(c => c._id);
+
+  // Count active assignments not submitted by this student
+  // Note: This logic assumes if not in submissions array, it's not submitted.
+  // A improved check would be to see if submission exists for this student.
+  const assignments = await Assignment.find({
+    class: { $in: classIds },
+    dueDate: { $gte: new Date() }, // Only count future/current assignments
+    'submissions.student': { $ne: student._id } // Not submitted by student
+  }).countDocuments();
+
+  res.json({ assignments });
+});
+
+module.exports = {
+  getStudentsPendingPanel,
+  getStudentProfile,
+  getMyClasses,
+  getMyPerformance,
+  getMyProgress,
+  getStudentNotifications,
+};

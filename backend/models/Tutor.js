@@ -29,6 +29,13 @@ const TutorSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  experienceYears: {
+    type: Number,
+    default: 0
+  },
+  subjectPreferences: [{
+    type: String
+  }],
   status: {
     type: String,
     enum: ['active', 'inactive', 'pending'],

@@ -25,6 +25,29 @@ exports.registerTimeslot = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc    Admin creates a timeslot for a specific panelist
+// @route   POST /api/panels/timeslots/admin
+// @access  Private/Admin
+exports.createTimeslotAdmin = asyncHandler(async (req, res) => {
+    const { panelistId, startTime, endTime } = req.body;
+    if (!panelistId || !startTime || !endTime) {
+        res.status(400);
+        throw new Error('panelistId, startTime and endTime are required');
+    }
+    const panelist = await User.findById(panelistId);
+    if (!panelist || (panelist.role !== 'volunteer' && panelist.role !== 'alumni' && panelist.role !== 'tutor')) {
+        res.status(400);
+        throw new Error('Panelist must be a volunteer, alumni, or tutor');
+    }
+    const timeslot = await Timeslot.create({
+        panelist: panelistId,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        isFilled: false
+    });
+    res.status(201).json({ message: 'Timeslot created', timeslot });
+});
+
 // @desc    Get available timeslots
 // @route   GET /api/panels/timeslots/available
 // @access  Private/Admin
@@ -49,12 +72,10 @@ exports.createPanel = asyncHandler(async (req, res) => {
         throw new Error('Panel must have exactly 3 members');
     }
 
-    const alumniCount = members.filter(m => m.role === 'alumni').length;
-    const volunteerCount = members.filter(m => m.role === 'volunteer').length;
-
-    if (alumniCount !== 1 || volunteerCount !== 2) {
+    const tutorCount = members.filter(m => m.role === 'tutor').length;
+    if (tutorCount !== 3) {
         res.status(400);
-        throw new Error('Panel must have 1 alumni and 2 volunteers');
+        throw new Error('Panel must have 3 tutors');
     }
 
     // Check if timeslot exists and is available
@@ -83,7 +104,8 @@ exports.createPanel = asyncHandler(async (req, res) => {
             `You have been assigned to a panel interview. Please check your dashboard for details.`,
             `<h1>Panel Interview Assignment</h1>
              <p>You have been assigned to a panel interview scheduled for ${timeslot.startTime}.</p>
-             <p>Meeting Link: ${panel.meetingLink}</p>`
+             <p>Meeting Link: ${panel.meetingLink}</p>`,
+            'admin'
         );
     }
 
@@ -132,7 +154,8 @@ exports.createBatch = asyncHandler(async (req, res) => {
             `Your panel interview has been scheduled. Please check your dashboard for details.`,
             `<h1>Panel Interview Scheduled</h1>
              <p>Your panel interview has been scheduled for ${panel.timeslot.startTime}.</p>
-             <p>Meeting Link: ${panel.meetingLink}</p>`
+             <p>Meeting Link: ${panel.meetingLink}</p>`,
+            'students'
         );
     }
 
@@ -146,7 +169,7 @@ exports.createBatch = asyncHandler(async (req, res) => {
 // @route   POST /api/panels/evaluations
 // @access  Private/Panel Member
 exports.submitEvaluation = asyncHandler(async (req, res) => {
-    const { applicationId, panelId, evaluation, recommendation, comments } = req.body;
+  const { applicationId, panelId, evaluation, recommendation, comments } = req.body;
 
     // Verify panel membership
     const panel = await Panel.findById(panelId);
@@ -163,6 +186,56 @@ exports.submitEvaluation = asyncHandler(async (req, res) => {
         recommendation,
         comments,
     });
+
+  if (recommendation) {
+    const app = await Application.findById(applicationId);
+    if (app) {
+      if (recommendation.toLowerCase().includes('recommend')) {
+        app.status = 'selected';
+        try {
+          const student = await (async () => {
+            const email = app.personalInfo?.email || app.email;
+            let user = await require('../models/User').findOne({ email });
+            if (!user) user = await require('../models/User').create({ name: app.personalInfo?.fullName || app.name || 'Student', email, password: 'Welcome@123', role: 'student', phone: app.personalInfo?.phone || app.phone });
+            let student = await require('../models/Student').findOne({ user: user._id });
+            if (!student) {
+              const educational = app.educationalInfo || {};
+              const subjects = Array.isArray(educational.subjects) ? educational.subjects.map(x => x?.name || x) : [];
+              student = await require('../models/Student').create({ user: user._id, grade: educational.currentClass || 'Unknown', subjects });
+            }
+            return student;
+          })();
+          const Panel = require('../models/Panel');
+          const Timeslot = require('../models/Timeslot');
+          const panel = await Panel.findById(panelId).populate('timeslot');
+          const slot = panel?.timeslot ? await Timeslot.findById(panel.timeslot) : null;
+          const slotDay = slot ? new Date(slot.startTime).toLocaleDateString('en-US', { weekday: 'long' }) : null;
+          const slotStartHM = slot ? new Date(slot.startTime).toTimeString().slice(0,5) : null;
+          const educational = app.educationalInfo || {};
+          const subjects = Array.isArray(educational.subjects) ? educational.subjects.map(x => x?.name || x) : [];
+          const Tutor = require('../models/Tutor');
+          let tutors = await Tutor.find({ subjects: { $in: subjects }, status: { $in: ['active', 'pending'] } });
+          if (slotDay && slotStartHM) {
+            const hmToMinutes = (hm) => { const [h,m] = hm.split(':').map(Number); return h*60 + m; };
+            const slotStartMin = hmToMinutes(slotStartHM);
+            tutors = tutors.filter(t => (t.availability||[]).some(a => a.day === slotDay && hmToMinutes(a.startTime) <= slotStartMin && slotStartMin < hmToMinutes(a.endTime)));
+          }
+          tutors.sort((a,b)=> (b.experienceYears||0) - (a.experienceYears||0));
+          const tutor = tutors[0];
+          if (tutor) {
+            const Class = require('../models/Class');
+            const avail = Array.isArray(tutor.availability) ? tutor.availability : [];
+            const sched = slotDay ? (avail.find(a => a.day === slotDay) || avail[0]) : (avail[0] || { day: 'Monday', startTime: '18:00', endTime: '19:00' });
+            const cls = await Class.create({ title: `${subjects[0] || 'Subject'} - ${student.user}`, subject: subjects[0] || tutor.subjects[0], tutor: tutor._id, students: [student._id], schedule: { day: sched.day, startTime: sched.startTime, endTime: sched.endTime }, status: 'scheduled', sessionLink: `https://meet.google.com/kk-class-${Date.now()}` });
+            app.tutorAssignment = { tutor: tutor._id, meetingLink: cls.sessionLink, schedule: cls.schedule };
+          }
+        } catch {}
+      } else if (recommendation.toLowerCase().includes('do not')) {
+        app.status = 'rejected';
+      }
+      await app.save();
+    }
+  }
 
     res.status(201).json({
         message: 'Evaluation submitted successfully',
@@ -182,6 +255,11 @@ exports.getPanels = asyncHandler(async (req, res) => {
 
     res.json(panels);
 });
+
+// @desc    Get all panels (alias for admin routes)
+// @route   GET /api/admin/panels
+// @access  Private/Admin
+exports.getAllPanels = exports.getPanels;
 
 // @desc    Get panel by ID
 // @route   GET /api/panels/:id
@@ -223,13 +301,175 @@ exports.getPanelEvaluations = asyncHandler(async (req, res) => {
     res.json(evaluations);
 });
 
-module.exports = {
-    registerTimeslot,
-    getAvailableTimeslots,
-    createPanel,
-    createBatch,
-    submitEvaluation,
-    getPanels,
-    getPanelById,
-    getPanelEvaluations
-};
+// @desc    Update panel
+// @route   PUT /api/admin/panels/:id
+// @access  Private/Admin
+exports.updatePanel = asyncHandler(async (req, res) => {
+    const { meetingLink, status } = req.body;
+    
+    const panel = await Panel.findById(req.params.id);
+    
+    if (!panel) {
+        res.status(404);
+        throw new Error('Panel not found');
+    }
+    
+    if (meetingLink) panel.meetingLink = meetingLink;
+    if (status) panel.status = status;
+    
+    await panel.save();
+    
+    res.json({
+        message: 'Panel updated successfully',
+        panel: await panel.populate('members', 'name email role')
+    });
+});
+
+// @desc    Delete panel
+// @route   DELETE /api/admin/panels/:id
+// @access  Private/Admin
+exports.deletePanel = asyncHandler(async (req, res) => {
+    const panel = await Panel.findById(req.params.id);
+    
+    if (!panel) {
+        res.status(404);
+        throw new Error('Panel not found');
+    }
+    
+    // Free up the timeslot if it exists
+    if (panel.timeslot) {
+        const timeslot = await Timeslot.findById(panel.timeslot);
+        if (timeslot) {
+            timeslot.isFilled = false;
+            await timeslot.save();
+        }
+    }
+    
+    await panel.deleteOne();
+    
+    res.json({
+        message: 'Panel deleted successfully'
+    });
+});
+
+// @desc    Assign panelists to a panel
+// @route   POST /api/admin/panels/:id/assign-panelists
+// @access  Private/Admin
+exports.assignPanelists = asyncHandler(async (req, res) => {
+    const { memberIds } = req.body;
+    
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length !== 3) {
+        res.status(400);
+        throw new Error('Panel must have exactly 3 members');
+    }
+    
+    const panel = await Panel.findById(req.params.id);
+    
+    if (!panel) {
+        res.status(404);
+        throw new Error('Panel not found');
+    }
+    
+    // Verify all members exist and have correct roles
+    const members = await User.find({ _id: { $in: memberIds } });
+    if (members.length !== 3) {
+        res.status(400);
+        throw new Error('Some members not found');
+    }
+    
+    const alumniCount = members.filter(m => m.role === 'alumni').length;
+    const volunteerCount = members.filter(m => m.role === 'volunteer').length;
+    
+    if (alumniCount !== 1 || volunteerCount !== 2) {
+        res.status(400);
+        throw new Error('Panel must have 1 alumni and 2 volunteers');
+    }
+    
+    panel.members = memberIds;
+    await panel.save();
+    
+    // Notify panel members
+    for (const member of members) {
+        await NotificationService.sendEmail(
+            member.email,
+            'Panel Assignment Updated - Karpom Karpippom',
+            `You have been assigned to a panel interview. Please check your dashboard for details.`,
+            `<h1>Panel Assignment Updated</h1>
+             <p>You have been assigned to a panel interview.</p>
+             <p>Meeting Link: ${panel.meetingLink || 'To be announced'}</p>`
+        );
+    }
+    
+    res.json({
+        message: 'Panelists assigned successfully',
+        panel: await panel.populate('members', 'name email role')
+    });
+});
+
+// @desc    Get panel analytics
+// @route   GET /api/admin/panels/analytics
+// @access  Private/Admin
+exports.getPanelAnalytics = asyncHandler(async (req, res) => {
+    // Get panels by status
+    const statusStats = await Panel.aggregate([
+        {
+            $group: {
+                _id: { $ifNull: ['$status', 'active'] },
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+    
+    // Get total panels
+    const totalPanels = await Panel.countDocuments();
+    
+    // Get panels with batches
+    const panelsWithBatches = await Panel.countDocuments({ batch: { $exists: true, $ne: null } });
+    
+    // Get evaluations count
+    const totalEvaluations = await InterviewEvaluation.countDocuments();
+    
+    // Get panels created over time (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const timeSeriesStats = await Panel.aggregate([
+        {
+            $match: {
+                createdAt: { $gte: thirtyDaysAgo }
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' },
+                    day: { $dayOfMonth: '$createdAt' }
+                },
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 }
+        }
+    ]);
+    
+    res.json({
+        statusStats,
+        totalPanels,
+        panelsWithBatches,
+        totalEvaluations,
+        timeSeriesStats
+    });
+});
+// @desc    Get panels assigned to current volunteer/alumni
+// @route   GET /api/panels/mine
+// @access  Private/Volunteer
+exports.getMyPanels = asyncHandler(async (req, res) => {
+    const panels = await Panel.find({ members: req.user._id })
+        .populate('members', 'name email role')
+        .populate('timeslot')
+        .populate({ path: 'batch', populate: { path: 'students', select: 'applicationId personalInfo email' } })
+        .sort({ createdAt: -1 });
+    res.json(panels);
+});
