@@ -1,0 +1,297 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, FileEdit, Link2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+
+type SessionItem = {
+  id: string;
+  title: string;
+  subject?: string;
+  day?: string;
+  time?: string;
+  status?: string;
+};
+type StudentItem = {
+  _id: string;
+  name: string;
+  email?: string;
+  grade?: string;
+  subjects?: string[];
+};
+type ClassItem = {
+  _id: string;
+  title?: string;
+  subject?: string;
+  sessionLink?: string;
+};
+type Perf = {
+  totalStudents: number;
+  activeStudents: number;
+  completedSessions: number;
+  averageRating: number;
+  totalHours: number;
+};
+
+export default function TutorDashboard() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const accessToken = (session as unknown as { accessToken?: string })
+    ?.accessToken;
+  const [upcoming, setUpcoming] = useState<SessionItem[]>([]);
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [perf, setPerf] = useState<Perf | null>(null);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const headers = accessToken
+      ? { Authorization: `Bearer ${accessToken}` }
+      : undefined;
+    const load = async () => {
+      try {
+        setError(""); // clear old errors
+        const [s1, s2, s3, s4, tprof] = await Promise.all([
+          api.get<SessionItem[]>("/tutor/sessions/upcoming", { headers }),
+          api.get<StudentItem[]>("/tutor/students", { headers }),
+          api.get<Perf>("/tutor/performance", { headers }),
+          api.get<ClassItem[]>("/classes/tutor", { headers }),
+          api.get<{
+            tutor?: {
+              subjects?: string[];
+              availability?: unknown[];
+              experienceYears?: number;
+            };
+          }>("/tutor/profile", { headers }),
+        ]);
+        setUpcoming(Array.isArray(s1.data) ? s1.data : []);
+        setStudents(Array.isArray(s2.data) ? s2.data : []);
+        setPerf(s3.data);
+        setClasses(Array.isArray(s4.data) ? s4.data : []);
+        const tp = tprof?.data?.tutor || {};
+        const needSubjects =
+          !tp.subjects ||
+          (Array.isArray(tp.subjects) && tp.subjects.length === 0);
+        const needAvailability =
+          !tp.availability ||
+          (Array.isArray(tp.availability) && tp.availability.length === 0);
+        const needExperience =
+          typeof tp.experienceYears !== "number" ||
+          (tp.experienceYears || 0) <= 0;
+        setProfileIncomplete(
+          !!(needSubjects || needAvailability || needExperience)
+        );
+      } catch (err: any) {
+        console.error("Dashboard load error", err);
+        setError("Failed to load dashboard data. Server might be down.");
+      }
+    };
+    load();
+  }, [accessToken]);
+
+  const isDharshini = String(session?.user?.name || "")
+    .toLowerCase()
+    .includes("dharshini");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold tracking-tight">Tutor Dashboard</h2>
+        <div className="flex gap-2">
+          {error && <Badge variant="destructive" className="mr-2">{error}</Badge>}
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/attendance")}
+          >
+            <ClipboardCheckIcon />
+            Attendance
+          </Button>
+          <Button
+            variant="outline"
+            disabled
+            title="Auto mapping runs in Admin panel"
+          >
+            Auto Map
+          </Button>
+          <Button onClick={() => router.push("/dashboard/assignments")}>
+            <FileEdit className="h-4 w-4 mr-2" />
+            Assignments & Tests
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        {profileIncomplete && (
+          <Card className="md:col-span-3 border-yellow-300">
+            <CardHeader>
+              <CardTitle>Complete Your Profile</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Please update your subjects, availability, and experience to
+                  enable automated student matching.
+                </div>
+                <Button onClick={() => router.push("/dashboard/profile")}>
+                  Update Profile & Availability
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground">Total Students</div>
+                <div className="text-xl font-bold">
+                  {perf?.totalStudents ?? 0}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Completed Sessions</div>
+                <div className="text-xl font-bold">
+                  {perf?.completedSessions ?? 0}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Avg Rating</div>
+                <div className="text-xl font-bold">
+                  {perf?.averageRating ?? 0}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Total Hours</div>
+                <div className="text-xl font-bold">{perf?.totalHours ?? 0}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Upcoming Sessions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              {upcoming.map((s) => (
+                <div key={s.id} className="p-3 border rounded-md">
+                  <div className="font-medium">{s.title}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{s.day || ""}</span>
+                    <Clock className="h-3 w-3" />
+                    <span>{s.time || ""}</span>
+                    <Badge variant="outline" className="ml-auto">
+                      {s.status || ""}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+              {upcoming.length === 0 && (
+                <div className="text-sm text-muted-foreground">
+                  No upcoming sessions
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>My Students</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-3">
+            {students.map((st) => (
+              <div key={st._id} className="p-3 border rounded-md">
+                <div className="font-medium">{st.name}</div>
+                <div className="text-xs text-muted-foreground">{st.email}</div>
+                <div className="text-xs mt-1">Grade: {st.grade}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {(st.subjects || []).map((s) => (
+                    <Badge key={s} variant="outline">
+                      {s}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {students.length === 0 && (
+              <div className="text-sm text-muted-foreground">
+                No students found
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Class Meeting Links</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2">
+            {classes.map((c) => (
+              <div
+                key={c._id}
+                className="p-3 border rounded-md flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-medium">{c.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {c.subject}
+                  </div>
+                </div>
+                {isDharshini ? (
+                  // Hide per-student join links for Dharshini as requested
+                  <Badge variant="secondary">Hidden</Badge>
+                ) : c.sessionLink ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <a
+                      href={c.sessionLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Link2 className="h-4 w-4 mr-1" /> Join
+                    </a>
+                  </Button>
+                ) : (
+                  <Badge variant="secondary">No link</Badge>
+                )}
+              </div>
+            ))}
+            {classes.length === 0 && (
+              <div className="text-sm text-muted-foreground">
+                No classes found
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ClipboardCheckIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-4 w-4 mr-2"
+    >
+      <path d="M9 2a1 1 0 0 0-1 1v1H7a3 3 0 0 0-3 3v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3h-1V3a1 1 0 0 0-1-1H9zm0 3h6V3H9v2zm8 4-5.5 5.5-2.5-2.5-1.5 1.5 4 4L19 12l-2-3z" />
+    </svg>
+  );
+}

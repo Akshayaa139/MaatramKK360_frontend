@@ -1,0 +1,77 @@
+{
+  "translation": {
+    "greeting": "வணக்கம், உலகம்!",
+    "application": {
+      "title": "மாணவர் விண்ணப்ப படிவம்",
+      "submit": "சமர்ப்பிக்க",
+      "success": {
+        "message": "விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது!"
+      },
+      "personalInfo": {
+        "title": "தனிப்பட்ட தகவல்",
+        "fullName": "முழு பெயர்",
+        "dateOfBirth": "பிறந்த தேதி",
+        "gender": "பாலினம்",
+        "phone": "தொலைபேசி எண்",
+        "email": "மின்னஞ்சல்",
+        "aadharNumber": "ஆதார் எண்",
+        "address": {
+          "street": "தெரு முகவரி",
+          "city": "நகரம்",
+          "state": "மாநிலம்",
+          "pincode": "அஞ்சல் குறியீடு",
+          "district": "மாவட்டம்"
+        }
+      },
+      "educationalInfo": {
+        "title": "கல்வி தகவல்",
+        "tenthBoard": "10வது வாரியம்",
+        "tenthSchool": "10வது பள்ளி",
+        "tenthYear": "10வது ஆண்டு",
+        "tenthPercentage": "10வது சதவீதம்",
+        "twelfthBoard": "12வது வாரியம்",
+        "twelfthSchool": "12வது பள்ளி",
+        "twelfthYear": "12வது ஆண்டு",
+        "twelfthPercentage": "12வது சதவீதம்",
+        "preferredStream": "விரும்பிய பிரிவு"
+      },
+      "familyInfo": {
+        "title": "குடும்ப தகவல்",
+        "fatherName": "தந்தையின் பெயர்",
+        "fatherOccupation": "தந்தையின் தொழில்",
+        "fatherIncome": "தந்தையின் வருமானம்",
+        "motherName": "தாயின் பெயர்",
+        "motherOccupation": "தாயின் தொழில்",
+        "motherIncome": "தாயின் வருமானம்",
+        "siblings": "சகோதரர்கள்",
+        "familyType": "குடும்ப வகை"
+      },
+      "financialInfo": {
+        "title": "நிதி தகவல்",
+        "annualFamilyIncome": "ஆண்டு குடும்ப வருமானம்",
+        "bankDetails": {
+          "accountNumber": "வங்கி கணக்கு எண்",
+          "ifscCode": "IFSC குறியீடு",
+          "bankName": "வங்கி பெயர்",
+          "branchName": "கிளை பெயர்"
+        }
+      },
+      "documents": {
+        "title": "ஆவணங்கள்",
+        "photo": "புகைப்படம்",
+        "signature": "கையொப்பம்",
+        "tenthMarksheet": "10வது மதிப்பெண் பட்டியல்",
+        "twelfthMarksheet": "12வது மதிப்பெண் பட்டியல்"
+      }
+    },
+    "common": {
+      "select": "தேர்ந்தெடு",
+      "cancel": "ரத்துசெய்",
+      "loading": "ஏற்றுகிறது...",
+      "submit": "சமர்ப்பிக்க",
+      "next": "அடுத்து",
+      "previous": "முந்தைய"
+    }
+  }
+}
+
