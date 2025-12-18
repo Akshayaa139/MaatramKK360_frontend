@@ -160,66 +160,100 @@ router.put("/leave", protect, authorize("tutor"), async (req, res) => {
   }
 });
 
-// GET /api/tutor/students - list students for tutor's classes
+// GET /api/tutor/students - list students assigned to tutor
 router.get("/students", protect, authorize("tutor"), async (req, res) => {
   try {
     const tutor = await getTutorForUser(req.user._id);
     if (!tutor) return res.json([]);
+
+    // Safety check: if tutor exists but has no _id, return empty to prevent "scan all" query
+    if (!tutor._id) {
+      console.error(`Tutor object found but has no _id for User ${req.user._id}`);
+      return res.json([]);
+    }
+
+    // 1. Get students explicitly assigned to this tutor
+    const assignedStudents = await Student.find({ tutor: tutor._id }).populate("user", "name email");
+
+    // 2. Get students in tutor's classes (handling legacy/manual adds)
     const classes = await Class.find({ tutor: tutor._id }).populate({
       path: "students",
       populate: { path: "user", select: "name email" },
     });
+
     const seen = new Set();
     const students = [];
+
+    // Helper to add student safely
+    const tutorSubjects = (tutor.subjects || []).map((subj) =>
+      String(subj).trim().toLowerCase()
+    );
+
+    const addStudent = async (s) => {
+      if (!s) return;
+
+      // Filter: Check subject overlap
+      const studentSubjects = (Array.isArray(s.subjects) ? s.subjects : []).map(
+        (subj) => String(subj).trim().toLowerCase()
+      );
+
+      // If tutor has specific subjects, ensure at least one matches
+      if (
+        tutorSubjects.length > 0 &&
+        !studentSubjects.some((subj) => tutorSubjects.includes(subj))
+      ) {
+        return; // Skip this student
+      }
+
+      const sid = String(s._id);
+      if (!seen.has(sid)) {
+        seen.add(sid);
+
+        // compute basic progress metrics
+        let attendanceRate = 0;
+        let testAvg = 0;
+        try {
+          // If s is from Class, it might be partial, so ensure we have full doc if needed, 
+          // but here we just need ID for progress calc which fetches fresh doc anyway
+          const studDoc = await Student.findById(s._id);
+          const attendance = Array.isArray(studDoc?.attendance) ? studDoc.attendance : [];
+          const presentCount = attendance.filter((a) => a.status === "present").length;
+          const denom = attendance.length;
+          attendanceRate = denom ? Math.round((presentCount / denom) * 100) : 0;
+
+          const perf = Array.isArray(studDoc?.performance) ? studDoc.performance : [];
+          let totalScore = 0, totalMax = 0;
+          for (const p of perf) {
+            totalScore += Number(p.score || 0);
+            totalMax += Number(p.maxScore || 0) || 0;
+          }
+          testAvg = totalMax ? Math.round((totalScore / totalMax) * 100) : 0;
+        } catch (e) { }
+
+        const composite = Math.round(0.7 * testAvg + 0.3 * attendanceRate);
+        students.push({
+          _id: s._id,
+          name: s.user?.name || "Student",
+          email: s.user?.email,
+          grade: s.grade,
+          subjects: s.subjects,
+          progress: composite,
+        });
+      }
+    };
+
+    // Add explicitly assigned
+    for (const s of assignedStudents) {
+      await addStudent(s);
+    }
+
+    // Add from classes
     for (const c of classes) {
       for (const s of c.students || []) {
-        const sid = String(s._id);
-        if (!seen.has(sid)) {
-          seen.add(sid);
-          // compute basic progress metrics for display
-          let attendanceRate = 0;
-          let testAvg = 0;
-          try {
-            const studDoc = await Student.findById(s._id);
-            const attendance = Array.isArray(studDoc.attendance)
-              ? studDoc.attendance
-              : [];
-            const presentCount = attendance.filter(
-              (a) => a.status === "present"
-            ).length;
-            const absentCount = attendance.filter(
-              (a) => a.status === "absent"
-            ).length;
-            const denom = presentCount + absentCount;
-            attendanceRate = denom
-              ? Math.round((presentCount / denom) * 100)
-              : 0;
-            const perf = Array.isArray(studDoc.performance)
-              ? studDoc.performance
-              : [];
-            let totalScore = 0,
-              totalMax = 0;
-            for (const p of perf) {
-              totalScore += Number(p.score || 0);
-              totalMax += Number(p.maxScore || 0) || 0;
-            }
-            testAvg = totalMax ? Math.round((totalScore / totalMax) * 100) : 0;
-          } catch (e) {
-            // ignore and fall back to defaults
-          }
-
-          const composite = Math.round(0.7 * testAvg + 0.3 * attendanceRate);
-          students.push({
-            _id: s._id,
-            name: s.user?.name || "Student",
-            email: s.user?.email,
-            grade: s.grade,
-            subjects: s.subjects,
-            progress: composite,
-          });
-        }
+        await addStudent(s);
       }
     }
+
     res.json(students);
   } catch (e) {
     console.error("Tutor students fetch failed:", e);

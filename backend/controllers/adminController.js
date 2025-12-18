@@ -30,12 +30,15 @@ const scheduleEquals = (a, b) => {
 
 const scheduleFromTutorAvailability = (tutor) => {
   const avail = Array.isArray(tutor.availability) ? tutor.availability : [];
-  const first = avail[0] || {
+  // Use first available slot if present
+  if (avail.length > 0) return avail[0];
+
+  // Default fallback if no availability
+  return {
     day: "Monday",
-    startTime: "18:00",
-    endTime: "19:00",
+    startTime: "10:00",
+    endTime: "11:00",
   };
-  return first;
 };
 
 // helper: check if two time ranges overlap on the same day
@@ -93,6 +96,8 @@ const createOrFindStudentFromApplication = async (application) => {
       password: "Welcome@123",
       role: "student",
       phone: application.personalInfo?.phone || application.phone,
+      isGeneratedFromApplication: true,
+      isAccountClaimed: false
     });
   }
   let student = await Student.findOne({ user: user._id });
@@ -116,44 +121,57 @@ const ensureClassForTutorAndStudent = async (
   subject,
   slot = null
 ) => {
-  const all = await Class.find({ tutor: tutor._id });
+  const all = await Class.find({ tutor: tutor._id }).populate('tutor'); // Ensure tutor is populated
   let existing = null;
+
+  // Normalize checking
+  const normSubject = norm(subject);
+
   if (slot) {
     existing = all.find(
       (c) =>
-        norm(c.subject) === norm(subject) && scheduleEquals(c.schedule, slot)
+        norm(c.subject) === normSubject && scheduleEquals(c.schedule, slot)
     );
   }
   // fallback: match by subject only (legacy behavior)
-  if (!existing) existing = all.find((c) => norm(c.subject) === norm(subject));
+  if (!existing) existing = all.find((c) => norm(c.subject) === normSubject);
+
+  // Resolve Tutor Name safely
+  let tutorName = "Group";
+  if (tutor.user && tutor.user.name) {
+    tutorName = tutor.user.name;
+  } else if (tutor.name) {
+    tutorName = tutor.name; // Fallback if name is direct on tutor
+  } else if (all.length > 0 && all[0].tutor && all[0].tutor.user && all[0].tutor.user.name) {
+    // If tutor doc passed in didn't have user populated, but found classes did
+    tutorName = all[0].tutor.user.name;
+  }
+
   if (existing) {
     const already = (existing.students || []).some(
       (s) => String(s) === String(student._id)
     );
     if (!already) {
       existing.students = [...(existing.students || []), student._id];
-      // keep class title generic (per tutor + subject) so meeting links are
-      // shared for the group rather than per student
+
+      // Fix Title if it looks like an ID
       if (!existing.title || / - [0-9a-f]{24}$/i.test(existing.title)) {
-        const tutorName =
-          tutor?.name || (tutor.user && tutor.user.name) || "Group";
         existing.title = `${subject} - ${tutorName}`;
       }
-      if (!existing.sessionLink) {
-        const slug = norm(subject).replace(/\s+/g, "-");
-        existing.sessionLink = `https://meet.google.com/kk-class-${tutor._id}-${slug}`;
+
+      // Fix Link if missing or generic
+      if (!existing.sessionLink || !existing.sessionLink.includes('meet.jit.si')) {
+        const slug = normSubject.replace(/[^a-z0-9]/g, "");
+        existing.sessionLink = `https://meet.jit.si/KK360-${slug}-${Date.now()}`;
       }
+
       // if we found a subject-only match but a slot was requested and differs,
       // prefer creating a new class instead of changing existing class schedule
-      // (so groups remain consistent by slot)
       if (slot && !scheduleEquals(existing.schedule, slot)) {
-        // create new class with desired slot and move the student there
-        const tutorName =
-          tutor?.name || (tutor.user && tutor.user.name) || "Group";
-        const title = `${subject} - ${tutorName}`;
-        const slug = norm(subject).replace(/\s+/g, "-");
+        // create new class with desired slot
+        const slug = normSubject.replace(/[^a-z0-9]/g, "");
         const cls = await Class.create({
-          title,
+          title: `${subject} - ${tutorName}`,
           subject,
           tutor: tutor._id,
           students: [student._id],
@@ -163,7 +181,7 @@ const ensureClassForTutorAndStudent = async (
             endTime: slot.endTime,
           },
           status: "scheduled",
-          sessionLink: `https://meet.google.com/kk-class-${tutor._id}-${slug}`,
+          sessionLink: `https://meet.jit.si/KK360-${slug}-${Date.now()}`,
         });
         return cls;
       }
@@ -171,12 +189,13 @@ const ensureClassForTutorAndStudent = async (
     }
     return existing;
   }
+
+  // Create NEW Class
   const sched = slot || scheduleFromTutorAvailability(tutor);
-  const tutorName = tutor?.name || (tutor.user && tutor.user.name) || "Group";
-  const title = `${subject} - ${tutorName}`;
-  const slug = norm(subject).replace(/\s+/g, "-");
+  const slug = normSubject.replace(/[^a-z0-9]/g, "");
+
   const cls = await Class.create({
-    title,
+    title: `${subject} - ${tutorName}`,
     subject,
     tutor: tutor._id,
     students: [student._id],
@@ -186,7 +205,7 @@ const ensureClassForTutorAndStudent = async (
       endTime: sched.endTime,
     },
     status: "scheduled",
-    sessionLink: `https://meet.google.com/kk-class-${tutor._id}-${slug}`,
+    sessionLink: `https://meet.jit.si/KK360-${slug}-${Date.now()}`,
   });
   return cls;
 };
@@ -388,10 +407,54 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
       const name = app.personalInfo?.fullName || app.name || "";
       const medium = s.medium || app.educationalInfo?.medium || "";
       const subjectName = typeof s === "string" ? s : s.name;
-      const tutors = await Tutor.find({ subjects: subjectName }).populate(
-        "user",
-        "name"
-      );
+
+      let tutors = [];
+
+      // Fix: Query Class to see if a specific tutor is assigned for THIS subject
+      // We need to find the student first
+      const email = app.personalInfo?.email || app.email;
+      if (email) {
+        const user = await User.findOne({
+          $or: [{ email: email }, { "personalInfo.email": email }]
+        });
+        if (user) {
+          const student = await Student.findOne({ user: user._id });
+          if (student) {
+            // Find class for this student + subject
+            // Note: Class subject must match 'subjectName'
+            const cls = await require('../models/Class').findOne({
+              students: student._id,
+              subject: subjectName
+            }).populate('tutor');
+
+            if (cls && cls.tutor) {
+              const assignedTutor = await Tutor.findById(cls.tutor._id).populate('user', 'name');
+              if (assignedTutor) tutors = [assignedTutor];
+            }
+          }
+        }
+      }
+
+      // Fallback: If not assigned (or legacy), show potential matches logic or just empty
+      if (tutors.length === 0) {
+        // Legacy fallback: check app.tutorAssignment if it matches subject
+        if (app.tutorAssignment?.tutor) {
+          const assigned = await Tutor.findById(app.tutorAssignment.tutor).populate("user", "name");
+          // Only show legacy if subject strict matches
+          if (assigned && (assigned.subjects || []).includes(subjectName)) {
+            tutors = [assigned];
+          }
+        }
+      }
+
+      // Final Fallback: matching candidates
+      if (tutors.length === 0) {
+        tutors = await Tutor.find({ subjects: subjectName }).populate(
+          "user",
+          "name"
+        );
+      }
+
       const tutorList = tutors.map((t) => ({
         id: t._id,
         name: t.user?.name || "",
@@ -966,6 +1029,9 @@ const runAutoMap = asyncHandler(async (req, res) => {
         { $addToSet: { students: st._id } }
       ).exec();
 
+      // Ensure class enrollment
+      await ensureClassForTutorAndStudent(tutor, st, subj);
+
       mappings.push({
         studentId: st._id,
         studentName: st.name || st.fullName || st.email || String(st._id),
@@ -1026,6 +1092,11 @@ const autoMapSelectedStudents = asyncHandler(async (req, res) => {
       { _id: tutor._id },
       { $addToSet: { students: sid } }
     ).exec();
+
+    // Ensure class enrollment
+    // We don't have subject here, assume General or derive from student subjects
+    const subj = (student.subjects && student.subjects[0]) || "General";
+    await ensureClassForTutorAndStudent(tutor, student, subj);
 
     mappings.push({
       studentId: sid,
@@ -1195,28 +1266,11 @@ const repairStudentData = asyncHandler(async (req, res) => {
       const subject = subjects[0] || "General";
 
       // 3. Ensure Class exists for this TUTOR
-      let cls = await Class.findOne({ tutor: tutorId }).sort({ createdAt: -1 });
+      // Use the helper that now handles proper titles and links
+      const cls = await ensureClassForTutorAndStudent(tutor, student, subject);
 
-      if (!cls) {
-        await tutor.populate('user');
-        cls = await Class.create({
-          title: `${subject} - ${tutor.user?.name || 'Tutor'}`,
-          subject: subject,
-          tutor: tutorId,
-          students: [],
-          schedule: { day: 'Monday', startTime: '10:00', endTime: '11:00' },
-          status: 'scheduled'
-        });
-        logs.push(`Created new class ${cls._id} for tutor ${tutorId}`);
-      }
-
-      // 4. Enroll Student
-      const isEnrolled = cls.students.some(s => String(s) === String(student._id));
-
-      if (!isEnrolled) {
-        cls.students.push(student._id);
-        await cls.save();
-        logs.push(`Enrolled student ${student._id} (${user.name}) into class ${cls._id}`);
+      if (cls) {
+        logs.push(`Ensured class ${cls._id} with title "${cls.title}" and link "${cls.sessionLink}"`);
         fixedCount++;
       }
     } catch (err) {

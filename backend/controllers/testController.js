@@ -105,14 +105,23 @@ const getTestsForStudent = asyncHandler(async (req, res) => {
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   if (classId === 'all') {
-    const classes = await Class.find({ students: student._id }).select('_id');
+    const query = { $or: [{ students: student._id }] };
+    if (student.tutor) {
+      query.$or.push({ tutor: student.tutor });
+    }
+    const classes = await Class.find(query).select('_id');
     const classIds = classes.map(c => c._id);
     const tests = await Test.find({ class: { $in: classIds } });
     return res.json(tests);
   }
 
   const belongs = await Class.exists({ _id: classId, students: student._id });
-  if (!belongs) return res.status(403).json({ message: 'Not enrolled in this class' });
+  let isMappedTutorClass = false;
+  if (!belongs && student.tutor) {
+    isMappedTutorClass = await Class.exists({ _id: classId, tutor: student.tutor });
+  }
+
+  if (!belongs && !isMappedTutorClass) return res.status(403).json({ message: 'Not enrolled in this class' });
   const tests = await Test.find({ class: classId });
   res.json(tests);
 });

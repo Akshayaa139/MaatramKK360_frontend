@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/app/providers";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -16,10 +16,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+// Transliteration removed due to library stability issues. 
+// Uses handleInputChange for auto-transliteration instead.
 import { Checkbox } from "@/components/ui/checkbox";
 import dynamic from "next/dynamic";
-const IndicTransliterate = dynamic(() => import("@ai4bharat/indic-transliterate").then(m => m.IndicTransliterate), { ssr: false });
 const getTransliterateSuggestionsDynamic = () => import("@ai4bharat/indic-transliterate").then(m => m.getTransliterateSuggestions);
+
+
 
 interface FormData {
   // Personal Information
@@ -315,6 +318,9 @@ export default function ApplyPage() {
         if (!hasLatin) return text;
         try {
           if (getSuggestFn) {
+            // Defensive check: ensure text is a valid string
+            if (typeof text !== 'string') return text;
+
             const suggestions = await getSuggestFn(text, "google", "", { lang: 'ta' });
             if (Array.isArray(suggestions) && suggestions.length > 0) {
               const first = suggestions[0] as unknown;
@@ -327,7 +333,9 @@ export default function ApplyPage() {
               }
             }
           }
-        } catch { }
+        } catch (e) {
+          console.warn("Transliteration error for word:", text, e);
+        }
         return text;
       };
 
@@ -453,23 +461,13 @@ export default function ApplyPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">{currentContent.fullName} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="fullName"
-                        value={formData.fullName}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, fullName: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="fullName"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    )}
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -536,66 +534,37 @@ export default function ApplyPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="address">{currentContent.address} *</Label>
-                  {language === 'ta' ? (
-                    <IndicTransliterate
-                      renderComponent={(props: React.ComponentProps<typeof Textarea>) => <Textarea {...props} />}
-                      id="address"
-                      value={formData.address}
-                      onChangeText={(text: string) => setFormData(prev => ({ ...prev, address: text }))}
-                      lang="ta"
-                    />
-                  ) : (
-                    <Textarea
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  )}
+                  <Textarea
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    required
+                    rows={3}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city">{currentContent.city} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="city"
-                        value={formData.city}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, city: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="city"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    )}
+                    <Input
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="state">{currentContent.state} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="state"
-                        value={formData.state}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, state: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="state"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    )}
+                    <Input
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -634,23 +603,13 @@ export default function ApplyPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="schoolName">{currentContent.schoolName} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="schoolName"
-                        value={formData.schoolName}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, schoolName: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="schoolName"
-                        name="schoolName"
-                        value={formData.schoolName}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    )}
+                    <Input
+                      id="schoolName"
+                      name="schoolName"
+                      value={formData.schoolName}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -745,82 +704,42 @@ export default function ApplyPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fatherName">{currentContent.fatherName}</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="fatherName"
-                        value={formData.fatherName}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, fatherName: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="fatherName"
-                        name="fatherName"
-                        value={formData.fatherName}
-                        onChange={handleInputChange}
-                      />
-                    )}
+                    <Input
+                      id="fatherName"
+                      name="fatherName"
+                      value={formData.fatherName}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="motherName">{currentContent.motherName}</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="motherName"
-                        value={formData.motherName}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, motherName: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="motherName"
-                        name="motherName"
-                        value={formData.motherName}
-                        onChange={handleInputChange}
-                      />
-                    )}
+                    <Input
+                      id="motherName"
+                      name="motherName"
+                      value={formData.motherName}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="fatherOccupation">{currentContent.fatherOccupation}</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="fatherOccupation"
-                        value={formData.fatherOccupation}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, fatherOccupation: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="fatherOccupation"
-                        name="fatherOccupation"
-                        value={formData.fatherOccupation}
-                        onChange={handleInputChange}
-                      />
-                    )}
+                    <Input
+                      id="fatherOccupation"
+                      name="fatherOccupation"
+                      value={formData.fatherOccupation}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="motherOccupation">{currentContent.motherOccupation}</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Input>) => <Input {...props} />}
-                        id="motherOccupation"
-                        value={formData.motherOccupation}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, motherOccupation: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Input
-                        id="motherOccupation"
-                        name="motherOccupation"
-                        value={formData.motherOccupation}
-                        onChange={handleInputChange}
-                      />
-                    )}
+                    <Input
+                      id="motherOccupation"
+                      name="motherOccupation"
+                      value={formData.motherOccupation}
+                      onChange={handleInputChange}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -899,68 +818,38 @@ export default function ApplyPage() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="whyKK">{currentContent.whyKK} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Textarea>) => <Textarea {...props} rows={4} />}
-                        id="whyKK"
-                        value={formData.whyKK}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, whyKK: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Textarea
-                        id="whyKK"
-                        name="whyKK"
-                        value={formData.whyKK}
-                        onChange={handleInputChange}
-                        required
-                        rows={4}
-                      />
-                    )}
+                    <Textarea
+                      id="whyKK"
+                      name="whyKK"
+                      value={formData.whyKK}
+                      onChange={handleInputChange}
+                      required
+                      rows={4}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="goals">{currentContent.goals} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Textarea>) => <Textarea {...props} rows={4} />}
-                        id="goals"
-                        value={formData.goals}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, goals: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Textarea
-                        id="goals"
-                        name="goals"
-                        value={formData.goals}
-                        onChange={handleInputChange}
-                        required
-                        rows={4}
-                      />
-                    )}
+                    <Textarea
+                      id="goals"
+                      name="goals"
+                      value={formData.goals}
+                      onChange={handleInputChange}
+                      required
+                      rows={4}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="challenges">{currentContent.challenges} *</Label>
-                    {language === 'ta' ? (
-                      <IndicTransliterate
-                        renderComponent={(props: React.ComponentProps<typeof Textarea>) => <Textarea {...props} rows={4} />}
-                        id="challenges"
-                        value={formData.challenges}
-                        onChangeText={(text: string) => setFormData(prev => ({ ...prev, challenges: text }))}
-                        lang="ta"
-                      />
-                    ) : (
-                      <Textarea
-                        id="challenges"
-                        name="challenges"
-                        value={formData.challenges}
-                        onChange={handleInputChange}
-                        required
-                        rows={4}
-                      />
-                    )}
+                    <Textarea
+                      id="challenges"
+                      name="challenges"
+                      value={formData.challenges}
+                      onChange={handleInputChange}
+                      required
+                      rows={4}
+                    />
                   </div>
                 </div>
               </div>

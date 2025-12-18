@@ -107,8 +107,16 @@ const getAssignmentsForStudent = asyncHandler(async (req, res) => {
   console.log("Found student:", student._id);
 
   if (classId === 'all') {
-    // Find all classes the student is enrolled in
-    const classes = await ClassModel.find({ students: student._id }).select('_id');
+    // Find all classes the student is enrolled in OR mapped to
+    const query = { $or: [{ students: student._id }] };
+
+    if (student.tutor) {
+      // Add mapped tutor classes logic (optionally filtered by subject if needed, 
+      // but 'all' usually implies all available)
+      query.$or.push({ tutor: student.tutor });
+    }
+
+    const classes = await ClassModel.find(query).select('_id');
     const classIds = classes.map(c => c._id);
     console.log("Student enrolled in classes:", classIds);
 
@@ -118,9 +126,16 @@ const getAssignmentsForStudent = asyncHandler(async (req, res) => {
     return res.json(assignments);
   }
 
+  // Check if student is enrolled OR if class belongs to mapped tutor
   const belongs = await ClassModel.exists({ _id: classId, students: student._id });
-  if (!belongs) {
-    console.log(`Student ${student._id} not enrolled in class ${classId}`);
+  let isMappedTutorClass = false;
+
+  if (!belongs && student.tutor) {
+    isMappedTutorClass = await ClassModel.exists({ _id: classId, tutor: student.tutor });
+  }
+
+  if (!belongs && !isMappedTutorClass) {
+    console.log(`Student ${student._id} not enrolled in class ${classId} and not mapped to tutor`);
     return res.status(403).json({ message: 'Not enrolled in this class' });
   }
 

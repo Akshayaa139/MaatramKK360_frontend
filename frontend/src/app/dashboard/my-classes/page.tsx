@@ -79,9 +79,28 @@ export default function MyClassesPage() {
     endTime: ""
   });
 
+  // Assign All Students Feature State
+  const [availableStudents, setAvailableStudents] = useState<any[]>([]);
+  const [assignAllStudents, setAssignAllStudents] = useState(false);
+
   useEffect(() => {
     fetchClasses();
   }, []);
+
+  useEffect(() => {
+    if (isCreateModalOpen) {
+      fetchStudents();
+    }
+  }, [isCreateModalOpen]);
+
+  const fetchStudents = async () => {
+    try {
+      const res = await api.get("/tutor/students");
+      setAvailableStudents(res.data || []);
+    } catch (e) {
+      console.error("Failed to fetch students");
+    }
+  };
 
   const fetchClasses = async () => {
     try {
@@ -159,12 +178,18 @@ export default function MyClassesPage() {
       return;
     }
 
+    const payload = {
+      ...newClass,
+      students: assignAllStudents ? availableStudents.map(s => s._id) : []
+    };
+
     try {
-      await api.post("/classes", newClass);
-      toast({ title: "Success", description: "Class created successfully." });
+      await api.post("/classes", payload);
+      toast({ title: "Success", description: `Class created with ${payload.students.length} students assigned.` });
       setIsCreateModalOpen(false);
       // Reset form
       setNewClass({ title: "", subject: "", description: "", day: "Monday", startTime: "", endTime: "" });
+      setAssignAllStudents(false);
       fetchClasses();
     } catch (error) {
       toast({ title: "Error", description: "Failed to create class.", variant: "destructive" });
@@ -440,6 +465,23 @@ export default function MyClassesPage() {
                 onChange={(e) => setNewClass({ ...newClass, endTime: e.target.value })}
               />
             </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Students</Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="assignAll"
+                  className="h-4 w-4 rounded border-gray-300"
+                  checked={assignAllStudents}
+                  onChange={(e) => setAssignAllStudents(e.target.checked)}
+                />
+                <label htmlFor="assignAll" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Assign to all my students ({availableStudents.length})
+                </label>
+              </div>
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>

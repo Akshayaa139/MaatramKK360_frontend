@@ -16,6 +16,10 @@ const StudentSchema = new mongoose.Schema({
       required: true,
     },
   ],
+  tutor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tutor'
+  },
   availability: [
     {
       day: { type: String },

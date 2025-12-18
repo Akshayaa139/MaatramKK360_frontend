@@ -95,6 +95,11 @@ export default function DashboardLayout({
       href: "/dashboard/assignments",
       icon: FileEdit,
     },
+    {
+      name: "Study Materials",
+      href: "/dashboard/study-materials",
+      icon: BookOpen,
+    },
     { name: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
   ];
 

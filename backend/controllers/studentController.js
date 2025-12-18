@@ -24,7 +24,10 @@ const getStudentProfile = asyncHandler(async (req, res) => {
     "user",
     "name email phone"
   );
-  if (!student) return res.status(404).json({ message: "Student not found" });
+  if (!student) {
+    // Return user info even if student profile is not yet created/linked
+    return res.json({ user, student: null });
+  }
   res.json({ user, student });
 });
 
@@ -33,13 +36,28 @@ const getMyClasses = asyncHandler(async (req, res) => {
   const student = await Student.findOne({ user: req.user._id });
   if (!student) {
     console.log("Student profile not found for user:", req.user._id);
-    return res.status(404).json({ message: "Student not found" });
+    return res.json([]); // Return empty classes list
   }
   console.log("Found student:", student._id);
-  const classes = await Class.find({ students: student._id }).populate({
+
+  // ORIGINAL: 
+  // const classes = await Class.find({ students: student._id }).populate({...});
+
+  // NEW: Find classes where student is enrolled OR class belongs to mapped tutor (and subject matches)
+  const query = {
+    $or: [{ students: student._id }],
+  };
+
+  if (student.tutor) {
+    // If mapped to a tutor, also include their classes (relaxed: show all tutor classes)
+    query.$or.push({ tutor: student.tutor });
+  }
+
+  const classes = await Class.find(query).populate({
     path: "tutor",
     populate: { path: "user", select: "name email phone" },
   });
+
   console.log("Found classes count:", classes.length);
   const result = classes.map((c) => ({
     id: c._id,
@@ -63,7 +81,14 @@ const getMyClasses = asyncHandler(async (req, res) => {
 // @access  Private/Student
 const getMyPerformance = asyncHandler(async (req, res) => {
   const student = await Student.findOne({ user: req.user._id });
-  if (!student) return res.status(404).json({ message: "Student not found" });
+  if (!student) {
+    return res.json({
+      mid: 0,
+      quarterly: 0,
+      half: 0,
+      final: 0,
+    });
+  }
   const perf = student.performance || [];
   const agg = {};
   for (const p of perf) {
@@ -88,7 +113,14 @@ const getMyPerformance = asyncHandler(async (req, res) => {
 // @access  Private/Student
 const getMyProgress = asyncHandler(async (req, res) => {
   const student = await Student.findOne({ user: req.user._id });
-  if (!student) return res.status(404).json({ message: "Student not found" });
+  if (!student) {
+    return res.json({
+      attendanceRate: 0,
+      testAveragePercent: 0,
+      testTrendPercent: 0,
+      compositeGrowth: 0,
+    });
+  }
 
   // attendance % (present / (present + absent))
   const attendance = Array.isArray(student.attendance)

@@ -168,21 +168,31 @@ const startClassSession = async (req, res) => {
 // @access  Private/Tutor
 const createClass = async (req, res) => {
   try {
-    const { title, subject, description, day, startTime, endTime } = req.body;
+    const { title, subject, description, day, startTime, endTime, students } = req.body;
 
     // Basic validation
     if (!title || !subject || !day || !startTime || !endTime) {
       return res.status(400).json({ message: "Please fill in all required fields" });
     }
 
-    const tutor = await Tutor.findOne({ user: req.user._id });
+    const tutor = await Tutor.findOne({ user: req.user._id }).populate('user');
     if (!tutor) {
       return res.status(404).json({ message: "Tutor profile not found" });
     }
 
+    // Use provided students list or empty
+    const studentList = Array.isArray(students) ? students : [];
+
+    // Robust Title generation if generic
+    let finalTitle = title;
+
+    // Generate unique link
+    const slug = norm(subject).replace(/[^a-z0-9]/g, "");
+    const sessionLink = `https://meet.jit.si/KK360-${slug}-${Date.now()}`;
+
     const newClass = new Class({
       tutor: tutor._id,
-      title,
+      title: finalTitle,
       subject,
       description: description || "",
       schedule: {
@@ -190,11 +200,16 @@ const createClass = async (req, res) => {
         startTime,
         endTime
       },
-      students: [], // Initially empty
-      status: 'scheduled'
+      students: studentList,
+      status: 'scheduled',
+      sessionLink
     });
 
     const savedClass = await newClass.save();
+
+    // IMPORTANT: If we added students, we should ensure they have this in their attendance/progress or at least be aware?
+    // The Class model is the source of truth for "Students in Class", so saving `students` array is sufficient for visibility.
+
     res.status(201).json(savedClass);
 
   } catch (error) {

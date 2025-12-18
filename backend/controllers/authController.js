@@ -23,6 +23,26 @@ const registerUser = async (req, res) => {
     const userExists = await User.findOne({ email: new RegExp('^' + normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') });
 
     if (userExists) {
+      // Check if this is an auto-generated account that hasn't been claimed yet
+      if (userExists.isGeneratedFromApplication && !userExists.isAccountClaimed) {
+        // Claim the account
+        userExists.name = name || userExists.name;
+        userExists.password = password; // Will be hashed by pre-save hook
+        userExists.phone = phone || userExists.phone;
+        userExists.isAccountClaimed = true;
+
+        await userExists.save();
+
+        return res.status(201).json({
+          _id: userExists._id,
+          name: userExists.name,
+          email: userExists.email,
+          role: userExists.role,
+          token: generateToken(userExists._id),
+          message: 'Account claimed successfully'
+        });
+      }
+
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -101,7 +121,7 @@ const loginUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    
+
     if (user) {
       res.json(user);
     } else {

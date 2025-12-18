@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 
 const nextDateForDay = (day: string) => {
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const target = days.indexOf(day);
   if (target < 0) return new Date().toISOString();
   const now = new Date();
@@ -51,29 +51,50 @@ export default function ClassesPage() {
   useEffect(() => {
     const fetchClasses = async () => {
       if (status !== 'authenticated') return;
-      
+
       try {
         setIsLoading(true);
         const authHeader = (session as any)?.accessToken ? { Authorization: `Bearer ${(session as any).accessToken}` } : undefined;
         let res;
         if ((session as any)?.user?.role === 'admin' || (session as any)?.user?.role === 'lead') {
           res = await api.get('/classes/all', { headers: authHeader });
+        } else if ((session as any)?.user?.role === 'student') {
+          res = await api.get('/students/classes', { headers: authHeader });
         } else {
           res = await api.get('/classes/tutor', { headers: authHeader });
         }
         const data = res.data || [];
-        const mapped: Class[] = data.map((c: any) => ({
-          id: c._id,
-          title: c.title,
-          description: c.subject || '',
-          tutor: c.tutor?.user?.name || (session as any)?.user?.name || 'Unknown',
-          date: nextDateForDay(c.schedule?.day || ''),
-          time: `${c.schedule?.startTime || ''} - ${c.schedule?.endTime || ''}`,
-          subject: c.subject,
-          status: c.status === 'completed' ? 'completed' : (c.status === 'cancelled' ? 'cancelled' : 'scheduled'),
-          participants: Array.isArray(c.students) ? c.students.length : undefined,
-          maxParticipants: undefined,
-        }));
+
+        let mapped: Class[] = [];
+        // Helper to map data based on source (Student API returns different shape)
+        if ((session as any)?.user?.role === 'student') {
+          mapped = data.map((c: any) => ({
+            id: c.id || c._id,
+            title: c.title,
+            description: c.subject || '',
+            tutor: c.tutor?.name || 'Unknown', // Student API returns { tutor: { name: ... } }
+            date: nextDateForDay(c.schedule?.day || ''),
+            time: `${c.schedule?.startTime || ''} - ${c.schedule?.endTime || ''}`,
+            subject: c.subject,
+            status: c.status === 'completed' ? 'completed' : (c.status === 'cancelled' ? 'cancelled' : 'scheduled'),
+            participants: undefined, // Student doesn't see participant count in this API
+            maxParticipants: undefined,
+          }));
+        } else {
+          // Admin/Tutor default mapping
+          mapped = data.map((c: any) => ({
+            id: c._id,
+            title: c.title,
+            description: c.subject || '',
+            tutor: c.tutor?.user?.name || (session as any)?.user?.name || 'Unknown',
+            date: nextDateForDay(c.schedule?.day || ''),
+            time: `${c.schedule?.startTime || ''} - ${c.schedule?.endTime || ''}`,
+            subject: c.subject,
+            status: c.status === 'completed' ? 'completed' : (c.status === 'cancelled' ? 'cancelled' : 'scheduled'),
+            participants: Array.isArray(c.students) ? c.students.length : undefined,
+            maxParticipants: undefined,
+          }));
+        }
         const upcoming = mapped.filter(m => m.status !== 'completed');
         const past = mapped.filter(m => m.status === 'completed');
         setUpcomingClasses(upcoming);
@@ -103,7 +124,7 @@ export default function ClassesPage() {
     try {
       // Replace with actual API call
       // await fetch(`/api/classes/${classId}/enroll`, { method: 'POST' });
-      
+
       setEnrolledClasses(prev => [...prev, classId]);
       toast({
         title: "Success",
@@ -173,13 +194,13 @@ export default function ClassesPage() {
           </select>
         </div>
       )}
-      
+
       <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="upcoming">Upcoming Classes</TabsTrigger>
           <TabsTrigger value="past">Past Classes</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="upcoming" className="space-y-4 mt-4">
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -196,10 +217,10 @@ export default function ClassesPage() {
                   <CardHeader className="pb-2 flex-grow">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{classItem.title}</CardTitle>
-                      <Badge 
+                      <Badge
                         variant={
-                          classItem.status === "full" ? "secondary" : 
-                          classItem.status === "cancelled" ? "destructive" : "default"
+                          classItem.status === "full" ? "secondary" :
+                            classItem.status === "cancelled" ? "destructive" : "default"
                         }
                       >
                         {classItem.status?.toUpperCase()}
@@ -228,11 +249,11 @@ export default function ClassesPage() {
                       {classItem.participants !== undefined && classItem.maxParticipants !== undefined && (
                         <div className="pt-2">
                           <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full" 
-                              style={{ 
-                                width: `${(classItem.participants / classItem.maxParticipants) * 100}%` 
-                              }} 
+                            <div
+                              className="bg-primary h-2 rounded-full"
+                              style={{
+                                width: `${(classItem.participants / classItem.maxParticipants) * 100}%`
+                              }}
                             />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -243,17 +264,17 @@ export default function ClassesPage() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       disabled={
-                        classItem.status === "full" || 
+                        classItem.status === "full" ||
                         classItem.status === "cancelled" ||
                         enrolledClasses.includes(classItem.id)
                       }
                       onClick={() => handleEnroll(classItem.id)}
                     >
-                      {enrolledClasses.includes(classItem.id) 
-                        ? "Enrolled" 
+                      {enrolledClasses.includes(classItem.id)
+                        ? "Enrolled"
                         : classItem.status === "full"
                           ? "Class Full"
                           : "Enroll Now"}
@@ -264,7 +285,7 @@ export default function ClassesPage() {
             </div>
           )}
         </TabsContent>
-        
+
         <TabsContent value="past" className="space-y-4 mt-4">
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -281,10 +302,10 @@ export default function ClassesPage() {
                   <CardHeader className="pb-2 flex-grow">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{classItem.title}</CardTitle>
-                      <Badge 
+                      <Badge
                         variant={
-                          classItem.attendance === "present" 
-                            ? "default" 
+                          classItem.attendance === "present"
+                            ? "default"
                             : classItem.attendance === "absent"
                               ? "destructive"
                               : "secondary"
@@ -317,9 +338,9 @@ export default function ClassesPage() {
                   </CardContent>
                   <CardFooter className="flex gap-2 mt-auto">
                     <Button variant="outline" className="flex-1" asChild>
-                      <a 
-                        href={classItem.recording} 
-                        target="_blank" 
+                      <a
+                        href={classItem.recording}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center"
                       >
@@ -342,9 +363,9 @@ export default function ClassesPage() {
                       </a>
                     </Button>
                     <Button variant="outline" className="flex-1" asChild>
-                      <a 
-                        href={classItem.notes} 
-                        target="_blank" 
+                      <a
+                        href={classItem.notes}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center"
                       >

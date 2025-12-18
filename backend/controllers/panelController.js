@@ -12,7 +12,7 @@ const NotificationService = require('../services/notificationService');
 // @access  Private/Volunteer or Alumni
 exports.registerTimeslot = asyncHandler(async (req, res) => {
     const { startTime, endTime } = req.body;
-    
+
     const timeslot = await Timeslot.create({
         panelist: req.user.id,
         startTime: new Date(startTime),
@@ -169,7 +169,7 @@ exports.createBatch = asyncHandler(async (req, res) => {
 // @route   POST /api/panels/evaluations
 // @access  Private/Panel Member
 exports.submitEvaluation = asyncHandler(async (req, res) => {
-  const { applicationId, panelId, evaluation, recommendation, comments } = req.body;
+    const { applicationId, panelId, evaluation, recommendation, comments } = req.body;
 
     // Verify panel membership
     const panel = await Panel.findById(panelId);
@@ -187,55 +187,100 @@ exports.submitEvaluation = asyncHandler(async (req, res) => {
         comments,
     });
 
-  if (recommendation) {
-    const app = await Application.findById(applicationId);
-    if (app) {
-      if (recommendation.toLowerCase().includes('recommend')) {
-        app.status = 'selected';
-        try {
-          const student = await (async () => {
-            const email = app.personalInfo?.email || app.email;
-            let user = await require('../models/User').findOne({ email });
-            if (!user) user = await require('../models/User').create({ name: app.personalInfo?.fullName || app.name || 'Student', email, password: 'Welcome@123', role: 'student', phone: app.personalInfo?.phone || app.phone });
-            let student = await require('../models/Student').findOne({ user: user._id });
-            if (!student) {
-              const educational = app.educationalInfo || {};
-              const subjects = Array.isArray(educational.subjects) ? educational.subjects.map(x => x?.name || x) : [];
-              student = await require('../models/Student').create({ user: user._id, grade: educational.currentClass || 'Unknown', subjects });
+    if (recommendation) {
+        const app = await Application.findById(applicationId);
+        if (app) {
+            if (recommendation.toLowerCase().includes('recommend')) {
+                app.status = 'selected';
+                try {
+                    const student = await (async () => {
+                        const email = app.personalInfo?.email || app.email;
+                        let user = await require('../models/User').findOne({ email });
+                        if (!user) user = await require('../models/User').create({ name: app.personalInfo?.fullName || app.name || 'Student', email, password: 'Welcome@123', role: 'student', phone: app.personalInfo?.phone || app.phone });
+                        let student = await require('../models/Student').findOne({ user: user._id });
+                        if (!student) {
+                            const educational = app.educationalInfo || {};
+                            const subjects = Array.isArray(educational.subjects) ? educational.subjects.map(x => x?.name || x) : [];
+                            student = await require('../models/Student').create({ user: user._id, grade: educational.currentClass || 'Unknown', subjects });
+                        }
+                        return student;
+                    })();
+                    const Panel = require('../models/Panel');
+                    const Timeslot = require('../models/Timeslot');
+                    const panel = await Panel.findById(panelId).populate('timeslot');
+                    const slot = panel?.timeslot ? await Timeslot.findById(panel.timeslot) : null;
+                    const slotDay = slot ? new Date(slot.startTime).toLocaleDateString('en-US', { weekday: 'long' }) : null;
+                    const slotStartHM = slot ? new Date(slot.startTime).toTimeString().slice(0, 5) : null;
+
+                    // Refactored: Multi-subject assignment loop
+                    const educational = app.educationalInfo || {};
+                    const subjects = Array.isArray(educational.subjects) ? educational.subjects.map(x => x?.name || x) : [];
+                    const Tutor = require('../models/Tutor');
+                    const Class = require('../models/Class');
+
+                    // Iterate each subject to assign best tutor
+                    for (const subject of subjects) {
+                        // 1. Find eligible tutors for this specific subject
+                        let tutors = await Tutor.find({ subjects: subject, status: { $in: ['active', 'pending'] } });
+
+                        // 2. Filter by slot match (if slot exists)
+                        if (slotDay && slotStartHM) {
+                            const hmToMinutes = (hm) => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+                            const slotStartMin = hmToMinutes(slotStartHM);
+                            tutors = tutors.filter(t => (t.availability || []).some(a => a.day === slotDay && hmToMinutes(a.startTime) <= slotStartMin && slotStartMin < hmToMinutes(a.endTime)));
+                        }
+
+                        if (tutors.length > 0) {
+                            // 3. Load Balancing
+                            const tutorsWithLoad = await Promise.all(tutors.map(async (t) => {
+                                const count = await Class.countDocuments({ tutor: t._id, status: { $ne: 'completed' } });
+                                return { ...t.toObject(), load: count };
+                            }));
+
+                            // Sort: Load ASC, Exp DESC
+                            tutorsWithLoad.sort((a, b) => {
+                                if (a.load !== b.load) return a.load - b.load;
+                                return (b.experienceYears || 0) - (a.experienceYears || 0);
+                            });
+
+                            const teacher = tutorsWithLoad[0];
+                            const tutor = teacher ? await Tutor.findById(teacher._id).populate('user') : null;
+
+                            if (tutor) {
+                                const avail = Array.isArray(tutor.availability) ? tutor.availability : [];
+                                const sched = slotDay ? (avail.find(a => a.day === slotDay) || avail[0]) : (avail[0] || { day: 'Monday', startTime: '18:00', endTime: '19:00' });
+
+                                // Check existing class for this subject
+                                const existing = await Class.findOne({
+                                    students: student._id,
+                                    subject: subject
+                                });
+
+                                if (!existing) {
+                                    const cls = await Class.create({
+                                        title: `${subject} - ${student.user}`,
+                                        subject: subject,
+                                        tutor: tutor._id,
+                                        students: [student._id],
+                                        schedule: { day: sched.day, startTime: sched.startTime, endTime: sched.endTime },
+                                        status: 'scheduled',
+                                        sessionLink: `https://meet.jit.si/KK360-${subject.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}`
+                                    });
+                                    // Keep at least one assignment for reference
+                                    if (!app.tutorAssignment || !app.tutorAssignment.tutor) {
+                                        app.tutorAssignment = { tutor: tutor._id, meetingLink: cls.sessionLink, schedule: cls.schedule };
+                                    }
+                                }
+                            }
+                        }
+                    } // end subject loop
+                } catch { }
+            } else if (recommendation.toLowerCase().includes('do not')) {
+                app.status = 'rejected';
             }
-            return student;
-          })();
-          const Panel = require('../models/Panel');
-          const Timeslot = require('../models/Timeslot');
-          const panel = await Panel.findById(panelId).populate('timeslot');
-          const slot = panel?.timeslot ? await Timeslot.findById(panel.timeslot) : null;
-          const slotDay = slot ? new Date(slot.startTime).toLocaleDateString('en-US', { weekday: 'long' }) : null;
-          const slotStartHM = slot ? new Date(slot.startTime).toTimeString().slice(0,5) : null;
-          const educational = app.educationalInfo || {};
-          const subjects = Array.isArray(educational.subjects) ? educational.subjects.map(x => x?.name || x) : [];
-          const Tutor = require('../models/Tutor');
-          let tutors = await Tutor.find({ subjects: { $in: subjects }, status: { $in: ['active', 'pending'] } });
-          if (slotDay && slotStartHM) {
-            const hmToMinutes = (hm) => { const [h,m] = hm.split(':').map(Number); return h*60 + m; };
-            const slotStartMin = hmToMinutes(slotStartHM);
-            tutors = tutors.filter(t => (t.availability||[]).some(a => a.day === slotDay && hmToMinutes(a.startTime) <= slotStartMin && slotStartMin < hmToMinutes(a.endTime)));
-          }
-          tutors.sort((a,b)=> (b.experienceYears||0) - (a.experienceYears||0));
-          const tutor = tutors[0];
-          if (tutor) {
-            const Class = require('../models/Class');
-            const avail = Array.isArray(tutor.availability) ? tutor.availability : [];
-            const sched = slotDay ? (avail.find(a => a.day === slotDay) || avail[0]) : (avail[0] || { day: 'Monday', startTime: '18:00', endTime: '19:00' });
-            const cls = await Class.create({ title: `${subjects[0] || 'Subject'} - ${student.user}`, subject: subjects[0] || tutor.subjects[0], tutor: tutor._id, students: [student._id], schedule: { day: sched.day, startTime: sched.startTime, endTime: sched.endTime }, status: 'scheduled', sessionLink: `https://meet.google.com/kk-class-${Date.now()}` });
-            app.tutorAssignment = { tutor: tutor._id, meetingLink: cls.sessionLink, schedule: cls.schedule };
-          }
-        } catch {}
-      } else if (recommendation.toLowerCase().includes('do not')) {
-        app.status = 'rejected';
-      }
-      await app.save();
+            await app.save();
+        }
     }
-  }
 
     res.status(201).json({
         message: 'Evaluation submitted successfully',
@@ -306,19 +351,19 @@ exports.getPanelEvaluations = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.updatePanel = asyncHandler(async (req, res) => {
     const { meetingLink, status } = req.body;
-    
+
     const panel = await Panel.findById(req.params.id);
-    
+
     if (!panel) {
         res.status(404);
         throw new Error('Panel not found');
     }
-    
+
     if (meetingLink) panel.meetingLink = meetingLink;
     if (status) panel.status = status;
-    
+
     await panel.save();
-    
+
     res.json({
         message: 'Panel updated successfully',
         panel: await panel.populate('members', 'name email role')
@@ -330,12 +375,12 @@ exports.updatePanel = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.deletePanel = asyncHandler(async (req, res) => {
     const panel = await Panel.findById(req.params.id);
-    
+
     if (!panel) {
         res.status(404);
         throw new Error('Panel not found');
     }
-    
+
     // Free up the timeslot if it exists
     if (panel.timeslot) {
         const timeslot = await Timeslot.findById(panel.timeslot);
@@ -344,9 +389,9 @@ exports.deletePanel = asyncHandler(async (req, res) => {
             await timeslot.save();
         }
     }
-    
+
     await panel.deleteOne();
-    
+
     res.json({
         message: 'Panel deleted successfully'
     });
@@ -357,37 +402,37 @@ exports.deletePanel = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 exports.assignPanelists = asyncHandler(async (req, res) => {
     const { memberIds } = req.body;
-    
+
     if (!memberIds || !Array.isArray(memberIds) || memberIds.length !== 3) {
         res.status(400);
         throw new Error('Panel must have exactly 3 members');
     }
-    
+
     const panel = await Panel.findById(req.params.id);
-    
+
     if (!panel) {
         res.status(404);
         throw new Error('Panel not found');
     }
-    
+
     // Verify all members exist and have correct roles
     const members = await User.find({ _id: { $in: memberIds } });
     if (members.length !== 3) {
         res.status(400);
         throw new Error('Some members not found');
     }
-    
+
     const alumniCount = members.filter(m => m.role === 'alumni').length;
     const volunteerCount = members.filter(m => m.role === 'volunteer').length;
-    
+
     if (alumniCount !== 1 || volunteerCount !== 2) {
         res.status(400);
         throw new Error('Panel must have 1 alumni and 2 volunteers');
     }
-    
+
     panel.members = memberIds;
     await panel.save();
-    
+
     // Notify panel members
     for (const member of members) {
         await NotificationService.sendEmail(
@@ -399,7 +444,7 @@ exports.assignPanelists = asyncHandler(async (req, res) => {
              <p>Meeting Link: ${panel.meetingLink || 'To be announced'}</p>`
         );
     }
-    
+
     res.json({
         message: 'Panelists assigned successfully',
         panel: await panel.populate('members', 'name email role')
@@ -419,20 +464,20 @@ exports.getPanelAnalytics = asyncHandler(async (req, res) => {
             }
         }
     ]);
-    
+
     // Get total panels
     const totalPanels = await Panel.countDocuments();
-    
+
     // Get panels with batches
     const panelsWithBatches = await Panel.countDocuments({ batch: { $exists: true, $ne: null } });
-    
+
     // Get evaluations count
     const totalEvaluations = await InterviewEvaluation.countDocuments();
-    
+
     // Get panels created over time (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const timeSeriesStats = await Panel.aggregate([
         {
             $match: {
@@ -453,7 +498,7 @@ exports.getPanelAnalytics = asyncHandler(async (req, res) => {
             $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 }
         }
     ]);
-    
+
     res.json({
         statusStats,
         totalPanels,
