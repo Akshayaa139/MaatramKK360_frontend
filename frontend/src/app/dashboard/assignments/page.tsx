@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface Assignment {
   status: string;
   file?: File;
   classId?: string;
+  isSubmitted?: boolean;
 }
 
 interface Test {
@@ -48,7 +50,7 @@ interface Class {
 }
 
 export default function AssignmentsPage() {
-  const { data: session } = useSession();
+  const { data: session } = useTabSession();
   const role = (session?.user as any)?.role;
   const [activeTab, setActiveTab] = useState("assignments");
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,7 +73,13 @@ export default function AssignmentsPage() {
       try {
         const endpoint = role === 'student' ? "/students/classes" : "/classes/tutor";
         const response = await api.get(endpoint);
-        setClasses(response.data);
+        // Deduplicate classes by _id to prevent key warnings
+        const uniqueClasses = response.data
+          .filter((c: any) => c?._id)
+          .filter((c: Class, index: number, self: Class[]) =>
+            index === self.findIndex((t) => t._id === c._id)
+          );
+        setClasses(uniqueClasses);
       } catch (err) {
         setError("Failed to fetch classes.");
       }
@@ -399,7 +407,13 @@ export default function AssignmentsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {assignment.submissionCount} / {assignment.totalStudents}
+                            {role === 'tutor' ? (
+                              `${assignment.submissionCount} / ${assignment.totalStudents}`
+                            ) : (
+                              <Badge variant={assignment.isSubmitted ? "success" : "outline"}>
+                                {assignment.isSubmitted ? "Submitted" : "Pending"}
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
@@ -444,7 +458,7 @@ export default function AssignmentsPage() {
                                     setIsSubmitDialogOpen(true);
                                   }}
                                 >
-                                  {assignment.submissionCount > 0 ? "Resubmit" : "Submit"}
+                                  {assignment.isSubmitted ? "Resubmit" : "Submit"}
                                 </Button>
                               )}
                             </div>

@@ -73,7 +73,40 @@ const getMyClasses = asyncHandler(async (req, res) => {
       phone: c.tutor?.user?.phone || "",
     },
   }));
-  res.json(result);
+  // Fetch Panels for this student
+  const Panel = require("../models/Panel");
+  const panels = await Panel.find({})
+    .populate({
+      path: "batch",
+      match: { students: student._id }
+    })
+    .populate("members", "name email role")
+    .populate("timeslot");
+
+  // Filter out panels where batch is null (student not in batch)
+  const myPanels = panels.filter(p => p.batch);
+
+  const panelSessions = myPanels.map(p => ({
+    id: p._id,
+    title: "Panel Interview",
+    subject: "Interview",
+    schedule: {
+      day: p.timeslot ? new Date(p.timeslot.startTime).toLocaleDateString("en-US", { weekday: 'long' }) : "",
+      startTime: p.timeslot ? new Date(p.timeslot.startTime).toLocaleTimeString() : "",
+      endTime: p.timeslot ? new Date(p.timeslot.endTime).toLocaleTimeString() : ""
+    },
+    status: "upcoming",
+    sessionLink: p.meetingLink,
+    tutor: {
+      id: p.members[0]?._id, // Just pick first member for display
+      name: "Panel: " + p.members.map(m => m.name).join(", "),
+      email: "",
+      phone: ""
+    }
+  }));
+
+  const combined = [...result, ...panelSessions];
+  res.json(combined);
 });
 
 // @desc    Get aggregated performance by exam type

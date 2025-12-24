@@ -123,7 +123,21 @@ const getAssignmentsForStudent = asyncHandler(async (req, res) => {
     const assignments = await Assignment.find({ class: { $in: classIds } })
       .populate('class', 'title');
     console.log("Found assignments:", assignments.length);
-    return res.json(assignments);
+
+    const result = assignments.map(a => {
+      const isSubmitted = a.submissions && a.submissions.some(s => s.student.toString() === student._id.toString());
+      const mySubmission = a.submissions && a.submissions.find(s => s.student.toString() === student._id.toString());
+
+      const aObj = a.toObject();
+      return {
+        ...aObj,
+        submissions: [], // Hide other students' submissions
+        isSubmitted,
+        mySubmission, // Return only their own submission details
+        submissionCount: a.submissions ? a.submissions.length : 0
+      };
+    });
+    return res.json(result);
   }
 
   // Check if student is enrolled OR if class belongs to mapped tutor
@@ -140,7 +154,22 @@ const getAssignmentsForStudent = asyncHandler(async (req, res) => {
   }
 
   const assignments = await Assignment.find({ class: classId });
-  res.json(assignments);
+
+  const result = assignments.map(a => {
+    const isSubmitted = a.submissions && a.submissions.some(s => s.student.toString() === student._id.toString());
+    const mySubmission = a.submissions && a.submissions.find(s => s.student.toString() === student._id.toString());
+
+    const aObj = a.toObject();
+    return {
+      ...aObj,
+      submissions: [], // Hide other students' submissions
+      isSubmitted,
+      mySubmission, // Return only their own submission details
+      submissionCount: a.submissions ? a.submissions.length : 0 // Keep total count if needed, or remove if hiding strictly
+    };
+  });
+
+  res.json(result);
 });
 
 // @desc    Submit an assignment
@@ -222,7 +251,10 @@ const getAssignmentDetails = asyncHandler(async (req, res) => {
   const { id } = req.params;
   // Populate student details in submissions
   const assignment = await Assignment.findById(id)
-    .populate('submissions.student', 'name email'); // Populate specific fields from Student/User
+    .populate({
+      path: 'submissions.student',
+      populate: { path: 'user', select: 'name email' }
+    });
 
   if (!assignment) {
     res.status(404);

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Users, Video, FileText, MessageSquare, Loader2, Link as LinkIcon, Edit2, Plus } from "lucide-react";
+import { Calendar, Clock, Users, Video, FileText, MessageSquare, Loader2, Link as LinkIcon, Edit2, Plus, Check, X, UserCheck, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,7 @@ interface Class {
   nextDate?: Date;
 }
 
-const getNextClassDate = (dayName: string, startTime: string): Date => {
+const getNextClassDate = (dayName: string, startTime: string, endTime: string): Date => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const targetDayIdx = days.indexOf(dayName);
   if (targetDayIdx === -1) return new Date();
@@ -39,13 +40,16 @@ const getNextClassDate = (dayName: string, startTime: string): Date => {
   const now = new Date();
   const currentDayIdx = now.getDay();
   const [hours, minutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number); // Needed for logic
 
   let diff = targetDayIdx - currentDayIdx;
 
   if (diff === 0) {
-    const classTime = new Date(now);
-    classTime.setHours(hours, minutes, 0, 0);
-    if (classTime < now) {
+    // It's the same day, check if the class is OVER
+    const classEndTime = new Date(now);
+    classEndTime.setHours(endHours, endMinutes, 0, 0);
+
+    if (classEndTime < now) {
       diff = 7;
     }
   } else if (diff < 0) {
@@ -58,7 +62,28 @@ const getNextClassDate = (dayName: string, startTime: string): Date => {
   return nextDate;
 };
 
+const getLastClassDate = (dayName: string, startTime: string, endTime: string): Date | null => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const targetDayIdx = days.indexOf(dayName);
+  const now = new Date();
+  const currentDayIdx = now.getDay();
+
+  // Calculate if a session finished TODAY
+  if (currentDayIdx === targetDayIdx) {
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const classEndTime = new Date(now);
+    classEndTime.setHours(endHours, endMinutes, 0, 0);
+
+    if (classEndTime < now) {
+      // It finished today
+      return classEndTime;
+    }
+  }
+  return null;
+}
+
 export default function MyClassesPage() {
+  const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +107,12 @@ export default function MyClassesPage() {
   // Assign All Students Feature State
   const [availableStudents, setAvailableStudents] = useState<any[]>([]);
   const [assignAllStudents, setAssignAllStudents] = useState(false);
+
+  // Attendance Modal State
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
+  const [attendanceStatus, setAttendanceStatus] = useState<Record<string, "present" | "absent">>({});
+  const [markingAttendance, setMarkingAttendance] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClasses();
@@ -117,30 +148,61 @@ export default function MyClassesPage() {
     .filter(c => c.status === 'scheduled' || c.status === 'rescheduled')
     .map(c => ({
       ...c,
-      nextDate: getNextClassDate(c.schedule.day, c.schedule.startTime)
+      nextDate: getNextClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime)
     }))
     .sort((a, b) => (a.nextDate?.getTime() || 0) - (b.nextDate?.getTime() || 0));
 
-  const pastClasses = classes.filter(c => c.status === 'completed' || c.status === 'cancelled');
+  // Determine "Virtual" Past Classes (Active classes that finished today)
+  const virtualPastClasses = classes
+    .filter(c => c.status === 'scheduled' || c.status === 'rescheduled')
+    .map(c => {
+      const lastDate = getLastClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime);
+      if (lastDate) {
+        return { ...c, status: 'completed', nextDate: lastDate, _virtual: true };
+      }
+      return null;
+    })
+    .filter((c): c is Class & { nextDate: Date } => c !== null);
+
+  const pastClasses = [
+    ...classes.filter(c => c.status === 'completed' || c.status === 'cancelled'),
+    ...virtualPastClasses
+  ].sort((a, b) => (b.nextDate?.getTime() || 0) - (a.nextDate?.getTime() || 0)); // Sort newest first
 
   const handleStartClassClick = async (classItem: Class) => {
-    const isInvalid = !classItem.sessionLink || classItem.sessionLink.includes("meet.google.com/kk-class-");
+    // Open attendance modal immediately
+    setAttendanceClass(classItem);
+    setIsAttendanceModalOpen(true);
+    setAttendanceStatus({}); // Reset local status
 
-    if (isInvalid) {
-      try {
-        toast({ title: "Starting Class...", description: "Generating secure video room..." });
-        const res = await api.post(`/classes/${classItem._id}/start`, {});
-        const newLink = res.data?.sessionLink;
-        if (newLink) {
-          window.open(newLink, '_blank');
-          fetchClasses();
-        }
-      } catch (e) {
-        toast({ title: "Error", description: "Failed to auto-start class.", variant: "destructive" });
-      }
-    } else {
-      window.open(classItem.sessionLink, '_blank');
-      api.post(`/classes/${classItem._id}/start`, { sessionLink: classItem.sessionLink }).catch(console.error);
+    // Navigate to internal meeting page
+    router.push(`/dashboard/meeting/${classItem._id}`);
+  };
+
+  const handleMarkAttendance = async (studentId: string, status: "present" | "absent") => {
+    if (!attendanceClass) return;
+    setMarkingAttendance(studentId);
+    try {
+      // Optimistic update
+      setAttendanceStatus(prev => ({ ...prev, [studentId]: status }));
+
+      await api.put(`/attendance/${attendanceClass._id}`, {
+        attendanceData: [{ studentId, status: status }],
+        date: new Date().toISOString().split('T')[0] // Ensure date is sent if needed by backend API logic
+      });
+
+      toast({ title: status === 'present' ? "Marked Present" : "Marked Absent", duration: 1000 });
+    } catch (error) {
+      console.error("Failed to mark attendance", error);
+      toast({ title: "Error", description: "Failed to save attendance.", variant: "destructive" });
+      // Revert on failure
+      setAttendanceStatus(prev => {
+        const copy = { ...prev };
+        delete copy[studentId];
+        return copy;
+      });
+    } finally {
+      setMarkingAttendance(null);
     }
   };
 
@@ -486,6 +548,69 @@ export default function MyClassesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateClass}>Create Class</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attendance Modal */}
+      <Dialog open={isAttendanceModalOpen} onOpenChange={setIsAttendanceModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Mark Attendance - {attendanceClass?.title}</DialogTitle>
+            <DialogDescription>
+              Mark students explicitly as present or absent.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 py-4">
+            {attendanceClass?.students && attendanceClass.students.length > 0 ? (
+              attendanceClass.students.map((student: any) => (
+                <div key={student._id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{student.user?.name || student.name || student.email || "Student"}</span>
+                    <span className="text-xs text-muted-foreground">ID: {student.studentId || "N/A"}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={attendanceStatus[student._id] === 'present' ? "default" : "outline"}
+                      className={attendanceStatus[student._id] === 'present' ? "bg-green-600 hover:bg-green-700" : "hover:text-green-600 hover:border-green-600"}
+                      onClick={() => handleMarkAttendance(student._id, 'present')}
+                      disabled={markingAttendance === student._id}
+                    >
+                      {markingAttendance === student._id && attendanceStatus[student._id] === 'present' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-1" />
+                      )}
+                      Present
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={attendanceStatus[student._id] === 'absent' ? "default" : "outline"}
+                      className={attendanceStatus[student._id] === 'absent' ? "bg-red-600 hover:bg-red-700" : "hover:text-red-600 hover:border-red-600"}
+                      onClick={() => handleMarkAttendance(student._id, 'absent')}
+                      disabled={markingAttendance === student._id}
+                    >
+                      {markingAttendance === student._id && attendanceStatus[student._id] === 'absent' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4 mr-1" />
+                      )}
+                      Absent
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No students assigned to this class.
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setIsAttendanceModalOpen(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

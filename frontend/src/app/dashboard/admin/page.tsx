@@ -30,7 +30,12 @@ import {
   Users,
   BookOpen,
   TrendingUp,
+  Clock, // Added
+  CalendarDays, // Added
+  FileText // Added
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // Added
+import { ScrollArea } from "@/components/ui/scroll-area"; // Added
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import AutoMapButton from "@/components/admin/AutoMapButton";
@@ -75,9 +80,11 @@ interface StudentDetail {
     quarterly: string;
     halfYearly: string;
   };
-  attendanceRate?: number;
+  attendanceRate?: number; // Restored
   assignmentReport?: { assignmentId: string; title: string }[];
   testReport?: { testId: string; title: string; marks: string }[];
+  history?: { date: string; title: string; type: string; score: number; maxScore: number }[]; // Added
+  notes?: string; // Added
 }
 
 interface APIApplication {
@@ -129,16 +136,28 @@ export default function AdminDashboard() {
   >([]);
   const [studentDetailId, setStudentDetailId] = useState<string>("");
   const [studentDetail, setStudentDetail] = useState<StudentDetail | null>(null);
+  const [liveSessions, setLiveSessions] = useState<any[]>([]);
+  const [selectedTutorForDetails, setSelectedTutorForDetails] = useState<any>(null); // Added
+  const [isTutorDetailsOpen, setIsTutorDetailsOpen] = useState(false); // Added
+
+  useEffect(() => {
+    const fetchLive = async () => {
+      try {
+        // Auth handled by interceptor
+        const res = await api.get("/classes/sessions/live");
+        setLiveSessions(res.data || []);
+      } catch (e) {
+        console.error("Failed to fetch live sessions", e);
+      }
+    };
+    if (session?.user) fetchLive();
+  }, [session]);
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const authHeader = session?.accessToken
-          ? { Authorization: `Bearer ${session.accessToken}` }
-          : undefined;
-        const response = await api.get("/admin/applications", {
-          headers: authHeader,
-        });
+        // Auth handled by interceptor
+        const response = await api.get("/admin/applications");
         const raw = Array.isArray(response.data)
           ? response.data
           : response.data?.applications || [];
@@ -181,12 +200,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchSelected = async () => {
       try {
-        const authHeader = session?.accessToken
-          ? { Authorization: `Bearer ${session.accessToken}` }
-          : undefined;
-        const res = await api.get("/admin/selected-students", {
-          headers: authHeader,
-        });
+        // Auth handled by interceptor
+        const res = await api.get("/admin/selected-students");
         const rows = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data?.rows)
@@ -201,12 +216,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchTutors = async () => {
       try {
-        const authHeader = session?.accessToken
-          ? { Authorization: `Bearer ${session.accessToken}` }
-          : undefined;
-        const res = await api.get("/admin/tutors/details", {
-          headers: authHeader,
-        });
+        // Auth handled by interceptor
+        const res = await api.get("/admin/tutors/details");
         const rows = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data?.tutors)
@@ -221,12 +232,8 @@ export default function AdminDashboard() {
   const loadStudentDetail = async () => {
     try {
       if (!studentDetailId) return;
-      const authHeader = session?.accessToken
-        ? { Authorization: `Bearer ${session.accessToken}` }
-        : undefined;
-      const res = await api.get(`/admin/students/${studentDetailId}/details`, {
-        headers: authHeader,
-      });
+      // Auth handled by interceptor
+      const res = await api.get(`/admin/students/${studentDetailId}/details`);
       setStudentDetail(res.data);
     } catch {
       setStudentDetail(null);
@@ -432,6 +439,51 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Live Sessions */}
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-800 flex items-center gap-2">
+              <span className="relative flex h-3 w-3 mr-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+              Live Class Sessions ({liveSessions.length} active)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {liveSessions.length === 0 ? (
+              <p className="text-sm text-red-600/80">No active classes at the moment.</p>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {/* Deduplicate sessions by class ID just in case */}
+                {Array.from(new Map(liveSessions.map(s => [s.class?._id || s._id, s])).values()).map((ls) => (
+                  <div key={ls._id} className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-l-red-500 border-t border-r border-b border-gray-100 flex flex-col gap-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-gray-900">{ls.class?.title || "Class"}</div>
+                        <div className="text-sm text-gray-600">
+                          {ls.tutor?.user?.name || "Unknown Tutor"}
+                        </div>
+                      </div>
+                      <Badge variant="destructive" className="animate-pulse">Live</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs mt-2 text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{ls.activeParticipants} Joining</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Started {new Date(ls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Filters */}
         <Card>
           <CardHeader>
@@ -568,7 +620,17 @@ export default function AdminDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>{td.qualifications || "-"}</TableCell>
-                      <TableCell>{(td.classes || []).length}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span>{(td.classes || []).length} Classes</span>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setSelectedTutorForDetails(td);
+                            setIsTutorDetailsOpen(true);
+                          }}>
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {(td.meetLinks || []).filter((m) => !!m.link).length}
                       </TableCell>
@@ -582,6 +644,57 @@ export default function AdminDashboard() {
                 No tutor records
               </div>
             )}
+
+            {/* Tutor Class Details Dialog */}
+            <Dialog open={isTutorDetailsOpen} onOpenChange={setIsTutorDetailsOpen}>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Class Schedule & Students - {selectedTutorForDetails?.name}</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {selectedTutorForDetails?.classes && selectedTutorForDetails.classes.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Class Title</TableHead>
+                          <TableHead>Schedule (Tutor)</TableHead>
+                          <TableHead>Students</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedTutorForDetails.classes.map((cls: any) => (
+                          <TableRow key={cls.id}>
+                            <TableCell className="font-medium">{cls.title}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {cls.schedule?.day || "No Day"} <br />
+                                <span className="text-muted-foreground text-xs">{cls.schedule?.startTime} - {cls.schedule?.endTime}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                {(cls.students || []).length > 0 ? (
+                                  (cls.students || []).map((st: any) => (
+                                    <div key={st.id} className="text-sm flex items-center gap-1">
+                                      <Users className="h-3 w-3 text-gray-400" />
+                                      {st.name}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-muted-foreground italic text-xs">No students enrolled</span>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">No classes assigned.</div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 
@@ -644,26 +757,47 @@ export default function AdminDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="md:col-span-1">
+
+                <Card className="md:col-span-3">
                   <CardHeader>
-                    <CardTitle>Reports</CardTitle>
+                    <CardTitle>Recent Activity & Notes</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-sm font-medium mb-1">Assignments</div>
-                    <div className="space-y-1">
-                      {(studentDetail.assignmentReport || []).map((a) => (
-                        <div key={a.assignmentId} className="text-sm">
-                          {a.title}
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <Clock className="h-4 w-4" /> Recent History
+                        </h4>
+                        <ScrollArea className="h-[200px] border rounded-md p-3">
+                          {studentDetail.history && studentDetail.history.length > 0 ? (
+                            <div className="space-y-3">
+                              {studentDetail.history.map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-start border-b pb-2 last:border-0">
+                                  <div>
+                                    <div className="text-sm font-medium">{item.title}</div>
+                                    <div className="text-xs text-muted-foreground">{item.type} • {new Date(item.date).toLocaleDateString()}</div>
+                                  </div>
+                                  <Badge variant={item.score >= 70 ? "secondary" : "destructive"}>
+                                    {item.score}/{item.maxScore}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">No recent history available.</div>
+                          )}
+                        </ScrollArea>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <FileText className="h-4 w-4" /> Tutor Notes
+                        </h4>
+                        <div className="bg-yellow-50 p-4 rounded-md border border-yellow-100 h-[200px] overflow-y-auto">
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {studentDetail.notes || "No notes recorded for this student."}
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                    <div className="text-sm font-medium mt-3 mb-1">Tests</div>
-                    <div className="space-y-1">
-                      {(studentDetail.testReport || []).map((t) => (
-                        <div key={t.testId} className="text-sm">
-                          {t.title} • {t.marks}
-                        </div>
-                      ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -778,6 +912,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 }

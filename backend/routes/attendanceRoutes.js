@@ -9,4 +9,7 @@ router.get('/:classId', protect, getAttendance);
 // Update attendance for a specific class
 router.put('/:classId', protect, updateAttendance);
 
+// Export attendance for a specific class
+router.get('/:classId/export', protect, require('../controllers/attendanceController').exportAttendance);
+
 module.exports = router;

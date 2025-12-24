@@ -1,6 +1,7 @@
 const Class = require("../models/Class");
 const Tutor = require("../models/Tutor");
 const Student = require("../models/Student");
+const ClassSession = require("../models/ClassSession");
 // helper: normalize strings for comparisons
 const norm = (s) =>
   String(s || "")
@@ -156,7 +157,37 @@ const startClassSession = async (req, res) => {
       }
     }
     await cls.save();
-    res.json({ message: "Class started", sessionLink: cls.sessionLink });
+
+    // Check for an existing active session for this class
+    const existingSession = await ClassSession.findOne({
+      class: cls._id,
+      activeParticipants: { $gt: 0 },
+      endTime: null
+    });
+
+    if (existingSession) {
+      // If we have an active session, ensure the link matches (just in case)
+      if (existingSession.sessionLink && existingSession.sessionLink !== cls.sessionLink) {
+        cls.sessionLink = existingSession.sessionLink;
+        await cls.save();
+      }
+      return res.json({
+        message: "Class session already active",
+        sessionLink: cls.sessionLink,
+        sessionId: existingSession._id
+      });
+    }
+
+    // Log the session start
+    const session = await ClassSession.create({
+      class: cls._id,
+      tutor: tutor._id,
+      startTime: new Date(),
+      sessionLink: cls.sessionLink,
+      expectedStudents: cls.students // Snapshot of students assigned at start time
+    });
+
+    res.json({ message: "Class started", sessionLink: cls.sessionLink, sessionId: session._id });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -218,4 +249,108 @@ const createClass = async (req, res) => {
   }
 };
 
-module.exports = { getTutorClasses, getAllClasses, updateClassSchedule, startClassSession, createClass };
+// @desc    Log session event (join/leave)
+// @route   POST /api/classes/session/:sessionId/log
+// @access  Private
+const logSessionEvent = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { action } = req.body; // 'join' or 'leave'
+
+    if (!['join', 'leave'].includes(action)) {
+      return res.status(400).json({ message: "Invalid action" });
+    }
+
+    const session = await ClassSession.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Add log entry
+    session.logs.push({
+      user: req.user._id,
+      role: req.user.role,
+      action,
+      timestamp: new Date()
+    });
+
+    // Update active count
+    if (action === 'join') {
+      session.activeParticipants = (session.activeParticipants || 0) + 1;
+    } else if (action === 'leave') {
+      session.activeParticipants = Math.max(0, (session.activeParticipants || 0) - 1);
+    }
+
+    await session.save();
+    res.json({ message: "Event logged", activeParticipants: session.activeParticipants });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Get live sessions (active > 0)
+// @route   GET /api/classes/sessions/live
+// @access  Private/Admin
+const getLiveSessions = async (req, res) => {
+  try {
+    const sessions = await ClassSession.find({ activeParticipants: { $gt: 0 }, endTime: null })
+      .populate({ path: 'class', select: 'title subject' })
+      .populate({ path: 'tutor', populate: { path: 'user', select: 'name' } })
+      .sort('-startTime');
+    res.json(sessions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// @desc    Join class session (get details for student/tutor)
+// @route   POST /api/classes/:classId/join
+// @access  Private (Student/Tutor)
+const joinClassSession = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const cls = await Class.findById(classId);
+    if (!cls) return res.status(404).json({ message: "Class not found" });
+
+    // Check enrollment
+    const isTutor = req.user.role === 'tutor';
+    if (!isTutor) {
+      // Check if student is enrolled
+      const isEnrolled = await Student.exists({ user: req.user._id, classes: classId });
+      // Also check if assigned in Class model
+      const isInClass = cls.students.includes(req.user._id); // Optimization needed if references differ (User vs Student)
+
+      // Let's rely on Class model 'students' array which contains Student IDs.
+      // We need to resolve User -> Student.
+      const student = await Student.findOne({ user: req.user._id });
+      if (!student) return res.status(403).json({ message: "Student profile not found" });
+
+      const isStudentInClass = cls.students.map(s => s.toString()).includes(student._id.toString());
+
+      if (!isStudentInClass) {
+        return res.status(403).json({ message: "Not enrolled in this class" });
+      }
+    }
+
+    // Find the most recent active session (created in last 12 hours) to log against
+    const recentSession = await ClassSession.findOne({
+      class: classId,
+      startTime: { $gte: new Date(Date.now() - 12 * 60 * 60 * 1000) },
+      endTime: null
+    }).sort({ startTime: -1 });
+
+    res.json({
+      message: "Joined class info",
+      sessionLink: cls.sessionLink,
+      sessionId: recentSession ? recentSession._id : null
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+module.exports = { getTutorClasses, getAllClasses, updateClassSchedule, startClassSession, createClass, logSessionEvent, getLiveSessions, joinClassSession };

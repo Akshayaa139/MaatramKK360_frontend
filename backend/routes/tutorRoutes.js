@@ -313,7 +313,23 @@ router.get(
         time: `${c.schedule?.startTime || ""} - ${c.schedule?.endTime || ""}`,
         status: c.status,
       }));
-      res.json(sessions);
+
+      // Fetch Panels for this tutor
+      const Panel = require("../models/Panel");
+      const panels = await Panel.find({ members: tutor.user }) // Panel stores User IDs in members
+        .populate("timeslot");
+
+      const panelSessions = panels.map(p => ({
+        id: p._id,
+        title: "Panel Interview",
+        subject: "Interview",
+        day: p.timeslot ? new Date(p.timeslot.startTime).toLocaleDateString("en-US", { weekday: 'long' }) : "",
+        time: p.timeslot ? `${new Date(p.timeslot.startTime).toLocaleTimeString()} - ${new Date(p.timeslot.endTime).toLocaleTimeString()}` : "",
+        status: "scheduled",
+        isPanel: true
+      }));
+
+      res.json([...sessions, ...panelSessions]);
     } catch (e) {
       console.error("Upcoming sessions fetch failed:", e);
       res.status(500).json({ message: "Server Error" });
@@ -634,6 +650,43 @@ router.get("/progress/:id", protect, authorize("tutor"), async (req, res) => {
     });
   } catch (e) {
     console.error("Student detail error:", e);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+// POST /api/tutor/student/:id/note - Add note to student
+router.post("/student/:id/note", protect, authorize("tutor"), async (req, res) => {
+  try {
+    const { note } = req.body;
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+
+    student.notes = note; // or append: student.notes + "\n" + note;
+    await student.save();
+    res.json({ message: "Note added", notes: student.notes });
+  } catch (e) {
+    console.error("Add note failed:", e);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
+// POST /api/tutor/student/:id/message - Send message to student
+router.post("/student/:id/message", protect, authorize("tutor"), async (req, res) => {
+  try {
+    const { message } = req.body;
+    const student = await Student.findById(req.params.id).populate("user");
+    if (!student || !student.user) return res.status(404).json({ message: "Student user not found" });
+
+    const Message = require("../models/Message");
+    const msg = await Message.create({
+      sender: req.user._id,
+      receiver: student.user._id,
+      content: message
+    });
+
+    res.json({ message: "Message sent", data: msg });
+  } catch (e) {
+    console.error("Send message failed:", e);
     res.status(500).json({ message: "Server Error" });
   }
 });

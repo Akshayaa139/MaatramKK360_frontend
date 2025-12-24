@@ -49,7 +49,8 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/,'');
+      const response = await fetch(`${apiBase}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -63,10 +64,19 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = await response.json();
+      // attempt to parse JSON, but guard against HTML responses
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (err) {
+        // If the response is HTML (e.g. a proxy/404 page), surface a clearer error
+        if (!response.ok) {
+          throw new Error(`Registration failed: received non-JSON response (status ${response.status})`);
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
+        throw new Error(data?.message || `Registration failed (status ${response.status})`);
       }
 
       router.push("/login?registered=true");

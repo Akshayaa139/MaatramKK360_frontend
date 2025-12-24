@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,8 +50,7 @@ interface QuizQuestion {
 }
 
 export default function StudentDashboard() {
-  const { data: session } = useSession();
-  const accessToken = (session as any)?.accessToken;
+  const { data: session } = useTabSession();
   const [profileData, setProfileData] = useState<ProfileResponse | null>(null);
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [progress, setProgress] = useState<{
@@ -78,16 +78,12 @@ export default function StudentDashboard() {
     // Random quote on mount
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
 
-    const headers = accessToken
-      ? { Authorization: `Bearer ${accessToken}` }
-      : undefined;
-
     const load = async () => {
       try {
         const [p, c, prog] = await Promise.all([
-          api.get("/students/profile", { headers }),
-          api.get("/students/classes", { headers }),
-          api.get("/students/progress", { headers }),
+          api.get("/students/profile"),
+          api.get("/students/classes"),
+          api.get("/students/progress"),
         ]);
         setProfileData(p.data);
         setClasses(Array.isArray(c.data) ? c.data : []);
@@ -100,8 +96,10 @@ export default function StudentDashboard() {
         setLoadingQuiz(false);
       }
     };
-    if (accessToken) load();
-  }, [accessToken]);
+    // if (accessToken) load(); 
+    // Just load regardless, api interceptor handles token
+    load();
+  }, []);
 
   const loadQuiz = async (subjects: string[]) => {
     setLoadingQuiz(true);
@@ -176,13 +174,9 @@ export default function StudentDashboard() {
         questionIndex: Number(k),
         selectedIndex: quizAnswers[Number(k)],
       }));
-      const headers = accessToken
-        ? { Authorization: `Bearer ${accessToken}` }
-        : undefined;
       await api.post(
         "/flashcards/responses",
-        { answers },
-        { headers }
+        { answers }
       );
       toast({
         title: "Challenge Completed!",
@@ -467,14 +461,13 @@ export default function StudentDashboard() {
                 </div>
                 <div className="mt-4 pt-4 border-t">
                   {cls.sessionLink ? (
-                    <Button variant="outline" size="sm" className="w-full" asChild>
-                      <a
-                        href={cls.sessionLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Link2 className="h-3 w-3 mr-2" /> Join Class
-                      </a>
+                    <Button variant="outline" size="sm" className="w-full" onClick={(e) => {
+                      e.preventDefault();
+                      // Import useRouter inside component if needed, or window.location for now if easier, 
+                      // but better to use next/navigation
+                      window.location.href = `/dashboard/meeting/${cls.id}`;
+                    }}>
+                      <Link2 className="h-3 w-3 mr-2" /> Join Class
                     </Button>
                   ) : (
                     <Badge variant="secondary" className="w-full justify-center py-1">No link available</Badge>

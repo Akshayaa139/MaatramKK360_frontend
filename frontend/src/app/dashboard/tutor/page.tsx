@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, FileEdit, Link2 } from "lucide-react";
+import { Calendar, Clock, FileEdit, Link2, MessageSquare } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 
@@ -38,42 +40,50 @@ type Perf = {
   totalHours: number;
 };
 
+type Message = {
+  _id: string;
+  sender: { _id: string; name: string; role: string };
+  content: string;
+  read: boolean;
+  createdAt: string;
+};
+
 export default function TutorDashboard() {
-  const { data: session } = useSession();
+  const { data: session } = useTabSession();
   const router = useRouter();
-  const accessToken = (session as unknown as { accessToken?: string })
-    ?.accessToken;
+  // removed accessToken local var
   const [upcoming, setUpcoming] = useState<SessionItem[]>([]);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [perf, setPerf] = useState<Perf | null>(null);
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const headers = accessToken
-      ? { Authorization: `Bearer ${accessToken}` }
-      : undefined;
+    // Auth handled by interceptor
     const load = async () => {
       try {
         setError(""); // clear old errors
-        const [s1, s2, s3, s4, tprof] = await Promise.all([
-          api.get<SessionItem[]>("/tutor/sessions/upcoming", { headers }),
-          api.get<StudentItem[]>("/tutor/students", { headers }),
-          api.get<Perf>("/tutor/performance", { headers }),
-          api.get<ClassItem[]>("/classes/tutor", { headers }),
+        const [s1, s2, s3, s4, tprof, msgs] = await Promise.all([
+          api.get<SessionItem[]>("/tutor/sessions/upcoming"),
+          api.get<StudentItem[]>("/tutor/students"),
+          api.get<Perf>("/tutor/performance"),
+          api.get<ClassItem[]>("/classes/tutor"),
           api.get<{
             tutor?: {
               subjects?: string[];
               availability?: unknown[];
               experienceYears?: number;
             };
-          }>("/tutor/profile", { headers }),
+          }>("/tutor/profile"),
+          api.get<Message[]>("/messages"),
         ]);
         setUpcoming(Array.isArray(s1.data) ? s1.data : []);
         setStudents(Array.isArray(s2.data) ? s2.data : []);
         setPerf(s3.data);
         setClasses(Array.isArray(s4.data) ? s4.data : []);
+        setMessages(Array.isArray(msgs.data) ? msgs.data : []);
         const tp = tprof?.data?.tutor || {};
         const needSubjects =
           !tp.subjects ||
@@ -93,7 +103,7 @@ export default function TutorDashboard() {
       }
     };
     load();
-  }, [accessToken]);
+  }, []);
 
   const isDharshini = String(session?.user?.name || "")
     .toLowerCase()
@@ -203,6 +213,39 @@ export default function TutorDashboard() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle>My Messages</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[200px]">
+              {messages.length > 0 ? (
+                <div className="space-y-4">
+                  {messages.map((msg) => (
+                    <div key={msg._id} className="border-b pb-3 last:border-0 last:pb-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <div className="font-medium text-sm flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 text-blue-500" />
+                          {msg.sender?.name || "Admin"}
+                          <Badge variant="secondary" className="text-[10px]">{msg.sender?.role}</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(msg.createdAt).toLocaleDateString()} {new Date(msg.createdAt).toLocaleTimeString()}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-700 pl-6">{msg.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">No messages received.</div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>

@@ -15,10 +15,10 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     (typeof headersObj.get === "function"
       ? headersObj.get("Authorization")
       : (headersObj["Authorization"] as string | undefined) ||
-        (headersObj["authorization"] as string | undefined));
+      (headersObj["authorization"] as string | undefined));
   if (!existingAuth) {
     const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
     if (token) {
       const h = config.headers as AxiosRequestConfig["headers"];
       const maybe = h as unknown as

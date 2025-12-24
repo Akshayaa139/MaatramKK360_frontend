@@ -107,8 +107,8 @@ export function SubmissionReviewDialog({ assignmentId, isOpen, onClose }: Submis
                                 <TableRow key={sub.student._id}>
                                     <TableCell>
                                         <div>
-                                            <p className="font-medium">{sub.student.name || "Student"}</p>
-                                            <p className="text-xs text-muted-foreground">{sub.student.email}</p>
+                                            <p className="font-medium">{(sub.student as any).user?.name || sub.student.name || "Student"}</p>
+                                            <p className="text-xs text-muted-foreground">{(sub.student as any).user?.email || sub.student.email}</p>
                                         </div>
                                     </TableCell>
                                     <TableCell>{new Date(sub.submittedAt).toLocaleDateString()}</TableCell>

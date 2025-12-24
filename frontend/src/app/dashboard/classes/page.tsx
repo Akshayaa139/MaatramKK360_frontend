@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, BookOpen, Loader2, AlertCircle } from "lucide-react";
@@ -39,7 +40,7 @@ interface Class {
 }
 
 export default function ClassesPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useTabSession();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<Class[]>([]);
@@ -54,14 +55,14 @@ export default function ClassesPage() {
 
       try {
         setIsLoading(true);
-        const authHeader = (session as any)?.accessToken ? { Authorization: `Bearer ${(session as any).accessToken}` } : undefined;
+        // Auth handled by interceptor
         let res;
         if ((session as any)?.user?.role === 'admin' || (session as any)?.user?.role === 'lead') {
-          res = await api.get('/classes/all', { headers: authHeader });
+          res = await api.get('/classes/all');
         } else if ((session as any)?.user?.role === 'student') {
-          res = await api.get('/students/classes', { headers: authHeader });
+          res = await api.get('/students/classes');
         } else {
-          res = await api.get('/classes/tutor', { headers: authHeader });
+          res = await api.get('/classes/tutor');
         }
         const data = res.data || [];
 
@@ -95,8 +96,42 @@ export default function ClassesPage() {
             maxParticipants: undefined,
           }));
         }
-        const upcoming = mapped.filter(m => m.status !== 'completed');
-        const past = mapped.filter(m => m.status === 'completed');
+
+        const now = new Date();
+        const upcoming: Class[] = [];
+        const past: Class[] = [];
+
+        mapped.forEach((m) => {
+          // Parse start time to compare accurately
+          try {
+            // m.date is already an ISO string for the day
+            const d = new Date(m.date);
+            // m.time format "HH:mm - HH:mm"
+            const startStr = m.time.split(' - ')[0];
+            if (startStr) {
+              const [hours, minutes] = startStr.split(':').map(Number);
+              if (!isNaN(hours)) {
+                d.setHours(hours, minutes || 0, 0, 0);
+              }
+            }
+
+            // DEBUG LOGGING
+            const isPast = d < now;
+            console.log(`Class: ${m.title}, DateStr: ${m.date}, TimeStr: ${m.time}, ParsedDate: ${d.toString()}, Now: ${now.toString()}, IsPast: ${isPast}, Status: ${m.status}`);
+
+            // If completed OR time has passed
+            if (m.status === 'completed' || d < now) {
+              past.push(m);
+            } else {
+              upcoming.push(m);
+            }
+          } catch (e) {
+            // Fallback
+            if (m.status === 'completed') past.push(m);
+            else upcoming.push(m);
+          }
+        });
+
         setUpcomingClasses(upcoming);
         setPastClasses(past);
       } catch (err) {
@@ -264,21 +299,24 @@ export default function ClassesPage() {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button
-                      className="w-full"
-                      disabled={
-                        classItem.status === "full" ||
-                        classItem.status === "cancelled" ||
-                        enrolledClasses.includes(classItem.id)
-                      }
-                      onClick={() => handleEnroll(classItem.id)}
-                    >
-                      {enrolledClasses.includes(classItem.id)
-                        ? "Enrolled"
-                        : classItem.status === "full"
-                          ? "Class Full"
-                          : "Enroll Now"}
-                    </Button>
+                    {/* Hide Enroll button for admins */
+                      !isAdmin && (
+                        <Button
+                          className="w-full"
+                          disabled={
+                            classItem.status === "full" ||
+                            classItem.status === "cancelled" ||
+                            enrolledClasses.includes(classItem.id)
+                          }
+                          onClick={() => handleEnroll(classItem.id)}
+                        >
+                          {enrolledClasses.includes(classItem.id)
+                            ? "Enrolled"
+                            : classItem.status === "full"
+                              ? "Class Full"
+                              : "Enroll Now"}
+                        </Button>
+                      )}
                   </CardFooter>
                 </Card>
               ))}

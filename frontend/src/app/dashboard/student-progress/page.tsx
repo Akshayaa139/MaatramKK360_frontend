@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Search, TrendingUp, ArrowUpRight, ArrowDownRight, Minus, FileText, Eye, MessageSquare } from "lucide-react";
 import api from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 type StudentProgress = {
   id: string;
@@ -54,6 +55,7 @@ type StudentDetail = {
 
 export default function StudentProgressPage() {
   const { data: session } = useSession();
+  const { toast } = useToast();
   const accessToken = (session as unknown as { accessToken?: string })?.accessToken;
 
   const [selectedClass, setSelectedClass] = useState<string>("all");
@@ -120,25 +122,78 @@ export default function StudentProgressPage() {
     }
   };
 
-  const handleAddNote = (studentId: string) => {
-    console.log(`Adding note for student ${studentId}`);
-    // Future implementation: Open modal to POST note
+  const handleAddNote = async (studentId: string) => {
+    const note = window.prompt("Enter note for student:");
+    if (!note) return;
+    try {
+      await api.post(`/tutor/student/${studentId}/note`, { note }, { headers: { Authorization: `Bearer ${accessToken}` } });
+      toast({ title: "Note added successfully" });
+      handleViewDetails(studentId); // Refresh details
+    } catch (e) {
+      toast({ title: "Failed to add note", variant: "destructive" });
+    }
   };
 
-  const handleContactStudent = (studentId: string) => {
-    console.log(`Contacting student ${studentId}`);
-    // Future implementation
+  const handleContactStudent = async (studentId: string) => {
+    const message = window.prompt("Enter message to student:");
+    if (!message) return;
+    try {
+      await api.post(`/tutor/student/${studentId}/message`, { message }, { headers: { Authorization: `Bearer ${accessToken}` } });
+      toast({ title: "Message sent successfully" });
+    } catch (e) {
+      toast({ title: "Failed to send message", variant: "destructive" });
+    }
   };
 
-  const handleGenerateReport = (studentId: string) => {
-    console.log(`Generating report for student ${studentId}`);
+  const handleGenerateReport = async (studentId: string) => {
+    try {
+      const response = await api.get(`/reports/student/${studentId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Student_Report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast({ title: "Report downloaded" });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Failed to generate report", variant: "destructive" });
+    }
+  };
+
+  const handleGenerateClassReport = async () => {
+    if (selectedClass === 'all') {
+      toast({ title: "Please select a specific class", variant: "destructive" });
+      return;
+    }
+    try {
+      const response = await api.get(`/reports/class?className=${encodeURIComponent(selectedClass)}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Class_Report_${selectedClass.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast({ title: "Class report downloaded" });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Failed to generate class report", variant: "destructive" });
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Student Progress Tracking</h2>
-        <Button>
+        <Button onClick={handleGenerateClassReport}>
           <FileText className="h-4 w-4 mr-2" />
           Generate Class Report
         </Button>

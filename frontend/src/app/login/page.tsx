@@ -42,7 +42,13 @@ export default function LoginPage() {
         });
         const data = await res.json();
         if (res.ok && data?.token) {
-          localStorage.setItem('token', data.token);
+          sessionStorage.setItem('token', data.token);
+          sessionStorage.setItem('kk_user', JSON.stringify({
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            id: data._id
+          }));
         }
       } catch (e) {
         console.warn('Backend JWT fetch failed, continuing with session only');

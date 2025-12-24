@@ -52,7 +52,7 @@ interface PanelMember {
   name: string;
   email: string;
   phone: string;
-  role: "alumni" | "volunteer" | "tutor";
+  role: "alumni" | "volunteer" | "tutor" | "admin";
   expertise: string[];
   availability: string[];
   status: "available" | "busy" | "unavailable";
@@ -118,10 +118,17 @@ export default function PanelInterviewManagement() {
       prev.map((m) => {
         const availList = m.availability || [];
         const available = availList.some((s: string) => {
-          const [day, times] = s.split(" ");
+          const parts = s.split(" ");
+          // Handle "Monday - Dec 29" format or simple "Monday"
+          const dayName = parts[0];
+          // The time part is always the last part "10:00-12:00"
+          const times = parts[parts.length - 1];
+
+          if (!times || !times.includes("-")) return false; // Safety check
+
           const [st, en] = times.split("-");
           return (
-            day === weekday &&
+            dayName === weekday &&
             hmToMinutes(st) <= startMin &&
             startMin < hmToMinutes(en)
           );
@@ -159,17 +166,17 @@ export default function PanelInterviewManagement() {
             : "",
           time: p.timeslot
             ? `${new Date(
-                p.timeslot.startTime
-              ).toLocaleTimeString()} - ${new Date(
-                p.timeslot.endTime
-              ).toLocaleTimeString()}`
+              p.timeslot.startTime
+            ).toLocaleTimeString()} - ${new Date(
+              p.timeslot.endTime
+            ).toLocaleTimeString()}`
             : "",
           duration: p.timeslot
             ? Math.round(
-                (new Date(p.timeslot.endTime).getTime() -
-                  new Date(p.timeslot.startTime).getTime()) /
-                  60000
-              )
+              (new Date(p.timeslot.endTime).getTime() -
+                new Date(p.timeslot.startTime).getTime()) /
+              60000
+            )
             : 0,
           panelMembers: (p.members || []).map((m: any) => ({
             id: String(m._id || m.id),
@@ -180,8 +187,10 @@ export default function PanelInterviewManagement() {
               m.role === "tutor"
                 ? "tutor"
                 : m.role === "alumni"
-                ? "alumni"
-                : "volunteer",
+                  ? "alumni"
+                  : m.role === "admin"
+                    ? "admin"
+                    : "volunteer",
             expertise: [],
             availability: [],
             status: "available",
@@ -202,26 +211,43 @@ export default function PanelInterviewManagement() {
         );
 
         const trows = Array.isArray(tutorsRes.data) ? tutorsRes.data : [];
-        setPanelMembers(
-          trows.map((t: any) => ({
-            id: String(t.id || t._id),
-            name: t.name,
-            email: t.email,
-            phone: t.phone || "",
-            role: "tutor",
-            expertise: t.subjects || [],
-            availability: (t.availability || []).map(
-              (a: any) => `${a.day} ${a.startTime}-${a.endTime}`
-            ),
-            status: "available",
-          }))
-        );
+        const mappedTutors: PanelMember[] = trows.map((t: any) => ({
+          id: String(t.userId || t.id || t._id),
+          name: t.name,
+          email: t.email,
+          phone: t.phone || "",
+          role: "tutor" as "tutor", // Explicit cast
+          expertise: t.subjects || [],
+          availability: (t.availability || []).map(
+            (a: any) => `${a.day} ${a.startTime}-${a.endTime}`
+          ),
+          status: "available" as "available", // Explicit cast
+        }));
+
+        // Inject current admin user if not present
+        if (session?.user?.role === 'admin') {
+          const adminMember = {
+            id: session.user.id,
+            name: session.user.name || "Admin",
+            email: session.user.email || "",
+            phone: "",
+            role: "admin" as const,
+            expertise: [],
+            availability: [],
+            status: "available" as const
+          };
+          // Avoid duplicates if admin is somehow in the list
+          if (!mappedTutors.find((m: any) => m.id === adminMember.id)) {
+            mappedTutors.push(adminMember);
+          }
+        }
+        setPanelMembers(mappedTutors);
 
         const apps = Array.isArray(selectedAppsRes.data?.applications)
           ? selectedAppsRes.data.applications
           : Array.isArray(selectedAppsRes.data)
-          ? selectedAppsRes.data
-          : [];
+            ? selectedAppsRes.data
+            : [];
         setStudents(
           apps.map((a: any) => ({
             id: String(a._id),
@@ -236,7 +262,7 @@ export default function PanelInterviewManagement() {
             status: "pending",
           }))
         );
-      } catch {}
+      } catch { }
     };
     load();
   }, [session]);
@@ -248,19 +274,18 @@ export default function PanelInterviewManagement() {
         ? { Authorization: `Bearer ${session.accessToken}` }
         : undefined;
       setCreateError("");
-      if (selectedMemberIds.length !== 3) {
-        setCreateError("Select exactly 3 tutors");
+      setCreateError("");
+      if (selectedMemberIds.length < 3 || selectedMemberIds.length > 4) {
+        setCreateError("Select 3 or 4 members");
         return;
       }
-      const nonTutor = panelMembers
-        .filter((m) => selectedMemberIds.includes(m.id))
-        .some((m) => m.role !== "tutor");
-      if (nonTutor) {
-        setCreateError("All selected members must be tutors");
-        return;
-      }
-      let timeslotId = selectedTimeslotId;
-      if (!timeslotId) {
+      // Relaxed role check: Allow admins and other roles mixed as per backend logic
+      // The backend handles the composition validation (e.g. 1 Alumni + 2 Volunteers OR 3 Tutors OR Admin mix)
+      // So we mainly rely on backend error if composition is wrong, but we can do a basic check if needed.
+      // For now, we trust the backend to validate stricter composition rules.
+      // For now, we trust the backend to validate stricter composition rules.
+      let timeslotId = "";
+      if (!timeslotId) { // Always create new timeslot logic matches existing flow
         if (!interviewDate || !interviewTimeCode) {
           setCreateError("Choose an available timeslot or pick date/time");
           return;
@@ -311,11 +336,29 @@ export default function PanelInterviewManagement() {
           return;
         }
       }
-      await api.post(
+      const panelRes = await api.post(
         "/panel/create",
         { memberIds: selectedMemberIds, timeslotId: timeslotId },
         { headers: authHeader }
       );
+
+      const newPanelId = panelRes.data?.panel?._id || panelRes.data?.panel?.id;
+
+      // If students are selected, assign them immediately
+      if (selectedStudentIds.length > 0 && newPanelId) {
+        await api.post(
+          "/panel/batches",
+          { studentIds: selectedStudentIds, panelId: newPanelId },
+          { headers: authHeader }
+        );
+        // Update local student status immediately
+        setStudents((prev) =>
+          prev.map((s) =>
+            selectedStudentIds.includes(s.id) ? { ...s, status: "scheduled" } : s
+          )
+        );
+      }
+
       const res = await api.get("/admin/panels", { headers: authHeader });
       const panels: any[] = res.data || [];
       const slots: InterviewSlot[] = panels.map((p) => ({
@@ -325,17 +368,17 @@ export default function PanelInterviewManagement() {
           : "",
         time: p.timeslot
           ? `${new Date(
-              p.timeslot.startTime
-            ).toLocaleTimeString()} - ${new Date(
-              p.timeslot.endTime
-            ).toLocaleTimeString()}`
+            p.timeslot.startTime
+          ).toLocaleTimeString()} - ${new Date(
+            p.timeslot.endTime
+          ).toLocaleTimeString()}`
           : "",
         duration: p.timeslot
           ? Math.round(
-              (new Date(p.timeslot.endTime).getTime() -
-                new Date(p.timeslot.startTime).getTime()) /
-                60000
-            )
+            (new Date(p.timeslot.endTime).getTime() -
+              new Date(p.timeslot.startTime).getTime()) /
+            60000
+          )
           : 0,
         panelMembers: (p.members || []).map((m: any) => ({
           id: String(m._id || m.id),
@@ -346,8 +389,10 @@ export default function PanelInterviewManagement() {
             m.role === "tutor"
               ? "tutor"
               : m.role === "alumni"
-              ? "alumni"
-              : "volunteer",
+                ? "alumni"
+                : m.role === "admin"
+                  ? "admin"
+                  : "volunteer",
           expertise: [],
           availability: [],
           status: "available",
@@ -363,10 +408,14 @@ export default function PanelInterviewManagement() {
       }));
       setInterviewSlots(slots);
       setSelectedMemberIds([]);
-      setSelectedTimeslotId("");
+      setSelectedStudentIds([]); // Clear selected students
       setInterviewDate("");
       setInterviewTimeCode("");
-    } catch {}
+      setInterviewTimeCode("");
+    } catch (e: any) {
+      console.error(e);
+      setCreateError(e.response?.data?.message || "Failed to create panel");
+    }
     setIsCreatingSlot(false);
   };
 
@@ -396,17 +445,17 @@ export default function PanelInterviewManagement() {
           : "",
         time: p.timeslot
           ? `${new Date(
-              p.timeslot.startTime
-            ).toLocaleTimeString()} - ${new Date(
-              p.timeslot.endTime
-            ).toLocaleTimeString()}`
+            p.timeslot.startTime
+          ).toLocaleTimeString()} - ${new Date(
+            p.timeslot.endTime
+          ).toLocaleTimeString()}`
           : "",
         duration: p.timeslot
           ? Math.round(
-              (new Date(p.timeslot.endTime).getTime() -
-                new Date(p.timeslot.startTime).getTime()) /
-                60000
-            )
+            (new Date(p.timeslot.endTime).getTime() -
+              new Date(p.timeslot.startTime).getTime()) /
+            60000
+          )
           : 0,
         panelMembers: (p.members || []).map((m: any) => ({
           id: String(m._id || m.id),
@@ -417,8 +466,10 @@ export default function PanelInterviewManagement() {
             m.role === "tutor"
               ? "tutor"
               : m.role === "alumni"
-              ? "alumni"
-              : "volunteer",
+                ? "alumni"
+                : m.role === "admin"
+                  ? "admin"
+                  : "volunteer",
           expertise: [],
           availability: [],
           status: "available",
@@ -433,7 +484,7 @@ export default function PanelInterviewManagement() {
         meetingLink: p.meetingLink || "",
       }));
       setInterviewSlots(slots);
-    } catch {}
+    } catch { }
   };
 
   const runAutoMap = async () => {
@@ -442,7 +493,7 @@ export default function PanelInterviewManagement() {
       : undefined;
     try {
       await api.post("/admin/automap", {}, { headers: authHeader });
-    } catch {}
+    } catch { }
   };
 
   const getStatusBadge = (status: string) => {
@@ -508,7 +559,7 @@ export default function PanelInterviewManagement() {
                     Create Interview Slot
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create Interview Slot</DialogTitle>
                     <DialogDescription>
@@ -553,9 +604,9 @@ export default function PanelInterviewManagement() {
                     <div>
                       <Label>Select Panel Members</Label>
                       <p className="text-sm text-gray-600 mb-4">
-                        Choose 3 tutors
+                        Choose 3-4 members
                       </p>
-                      <ScrollArea className="h-64 border rounded-md p-2">
+                      <ScrollArea className="h-48 border rounded-md p-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {panelMembers.map((member) => (
                             <div
@@ -577,8 +628,10 @@ export default function PanelInterviewManagement() {
                                   {member.role === "tutor"
                                     ? "Tutor"
                                     : member.role === "alumni"
-                                    ? "Alumni"
-                                    : "Volunteer"}
+                                      ? "Alumni"
+                                      : member.role === "admin"
+                                        ? "Admin"
+                                        : "Volunteer"}
                                 </p>
                               </div>
                               <Badge
@@ -596,29 +649,41 @@ export default function PanelInterviewManagement() {
                       </ScrollArea>
                     </div>
 
+
                     <div>
-                      <Label>Select Available Timeslot</Label>
-                      <Select
-                        value={selectedTimeslotId}
-                        onValueChange={setSelectedTimeslotId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose available timeslot" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableTimeslots.map((t: any) => (
-                            <SelectItem
-                              key={String(t._id)}
-                              value={String(t._id)}
-                            >
-                              {new Date(t.startTime).toLocaleString()} -{" "}
-                              {new Date(t.endTime).toLocaleString()} •{" "}
-                              {t.panelist?.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Select Students (Optional)</Label>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Select students to interview in this slot
+                      </p>
+                      <ScrollArea className="h-48 border rounded-md p-2">
+                        <div className="space-y-2">
+                          {students
+                            .filter((s) => s.status === "pending")
+                            .map((student) => (
+                              <div key={student.id} className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+                                <Checkbox
+                                  checked={selectedStudentIds.includes(student.id)}
+                                  onCheckedChange={(val) => {
+                                    setSelectedStudentIds((prev) => {
+                                      if (val) return [...prev, student.id];
+                                      return prev.filter((x) => x !== student.id);
+                                    });
+                                  }}
+                                />
+                                <div>
+                                  <p className="font-medium text-sm">{student.name}</p>
+                                  <p className="text-xs text-gray-500">{student.class} • {student.subjects.join(", ")}</p>
+                                </div>
+                              </div>
+                            ))}
+                          {students.filter(s => s.status === "pending").length === 0 && (
+                            <p className="text-sm text-gray-500 text-center py-4">No pending students found</p>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </div>
+
+
                   </div>
                   <DialogFooter>
                     {createError && (
@@ -692,31 +757,10 @@ export default function PanelInterviewManagement() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Available Capacity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">
-                {interviewSlots.reduce(
-                  (acc, slot) =>
-                    acc + (slot.maxStudents - slot.currentStudents),
-                  0
-                )}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Total remaining slots
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Interview Slots */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Interview Slots */}
+        <div className="grid grid-cols-1 gap-8">
           <Card>
             <CardHeader>
               <CardTitle>Interview Slots</CardTitle>
@@ -748,7 +792,7 @@ export default function PanelInterviewManagement() {
                           >
                             <UserCheck className="h-3 w-3 mr-2 text-gray-400" />
                             {member.name} (
-                            {member.role === "alumni" ? "Alumni" : "Volunteer"})
+                            {member.role === "alumni" ? "Alumni" : member.role === "admin" ? "Admin" : member.role === "tutor" ? "Tutor" : "Volunteer"})
                           </div>
                         ))}
                       </div>
@@ -759,153 +803,21 @@ export default function PanelInterviewManagement() {
                         {slot.currentStudents}/{slot.maxStudents} students
                       </div>
                       {slot.meetingLink && (
-                        <Button variant="outline" size="sm">
-                          <Video className="h-3 w-3 mr-1" />
-                          Meeting Link
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={slot.meetingLink} target="_blank" rel="noopener noreferrer">
+                            <Video className="h-3 w-3 mr-1" />
+                            Meeting Link
+                          </a>
                         </Button>
                       )}
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Students Pending Scheduling */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Students Pending Scheduling</CardTitle>
-              <p className="text-gray-600">
-                Students ready for panel interviews
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {students
-                  .filter((s) => s.status === "pending")
-                  .filter((student) => {
-                    if (!selectedMemberIds.length) return true;
-                    const selectedTutors = panelMembers.filter((m) =>
-                      selectedMemberIds.includes(m.id)
-                    );
-                    const subj = student.subjects || [];
-                    return selectedTutors.some((t) =>
-                      (t.expertise || []).some((ex) => subj.includes(ex))
-                    );
-                  })
-                  .map((student) => (
-                    <div key={student.id} className="p-3 border rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="font-medium">{student.name}</h4>
-                          <p className="text-sm text-gray-600">
-                            {student.applicationNumber}
-                          </p>
-                        </div>
-                        {getStudentStatusBadge(student.status)}
-                      </div>
-
-                      <div className="text-sm space-y-1 mb-3">
-                        <p>Class: {student.class}</p>
-                        <p>Subjects: {student.subjects.join(", ")}</p>
-                      </div>
-
-                      <div className="flex gap-2 items-center">
-                        <Checkbox
-                          checked={selectedStudentIds.includes(student.id)}
-                          onCheckedChange={(val) => {
-                            setSelectedStudentIds((prev) => {
-                              if (val) return [...prev, student.id];
-                              return prev.filter((x) => x !== student.id);
-                            });
-                          }}
-                        />
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              Schedule
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Schedule Interview</DialogTitle>
-                              <DialogDescription>
-                                Schedule panel interview for {student.name}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              <div>
-                                <Label>Select Interview Slot</Label>
-                                <Select
-                                  value={scheduleSlotId}
-                                  onValueChange={setScheduleSlotId}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Choose available slot" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {interviewSlots.map((slot) => (
-                                      <SelectItem key={slot.id} value={slot.id}>
-                                        {slot.date} • {slot.time} (
-                                        {slot.currentStudents}/
-                                        {slot.maxStudents})
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button
-                                onClick={() =>
-                                  scheduleSlotId &&
-                                  handleScheduleInterview(
-                                    student.id,
-                                    scheduleSlotId
-                                  )
-                                }
-                              >
-                                Schedule Interview
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-
-                        <Button size="sm" variant="outline">
-                          <Mail className="h-3 w-3 mr-1" />
-                          Notify
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                {students.filter((s) => s.status === "pending").length ===
-                  0 && (
+                {interviewSlots.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    No students pending scheduling
+                    No interview slots created yet
                   </div>
                 )}
-              </div>
-              <div className="mt-4 flex items-end gap-3">
-                <div className="w-72">
-                  <Label>Assign selected to panel</Label>
-                  <Select onValueChange={(val) => assignStudentsToPanel(val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose panel to assign" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {interviewSlots.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.date} • {s.time}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="text-sm text-gray-600">
-                  Selected: {selectedStudentIds.length}
-                </div>
               </div>
             </CardContent>
           </Card>

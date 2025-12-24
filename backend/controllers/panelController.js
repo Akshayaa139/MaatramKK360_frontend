@@ -32,12 +32,16 @@ exports.createTimeslotAdmin = asyncHandler(async (req, res) => {
     const { panelistId, startTime, endTime } = req.body;
     if (!panelistId || !startTime || !endTime) {
         res.status(400);
-        throw new Error('panelistId, startTime and endTime are required');
+        return res.status(400).json({ message: 'panelistId, startTime and endTime are required' });
     }
     const panelist = await User.findById(panelistId);
-    if (!panelist || (panelist.role !== 'volunteer' && panelist.role !== 'alumni' && panelist.role !== 'tutor')) {
-        res.status(400);
-        throw new Error('Panelist must be a volunteer, alumni, or tutor');
+    if (!panelist) {
+        return res.status(404).json({ message: 'Panelist not found' });
+    }
+
+    const allowedRoles = ['volunteer', 'alumni', 'tutor', 'admin'];
+    if (!allowedRoles.includes((panelist.role || '').toLowerCase())) {
+        return res.status(400).json({ message: 'Panelist must be a volunteer, alumni, tutor, or admin' });
     }
     const timeslot = await Timeslot.create({
         panelist: panelistId,
@@ -67,15 +71,26 @@ exports.createPanel = asyncHandler(async (req, res) => {
 
     // Verify all members exist and have correct roles
     const members = await User.find({ _id: { $in: memberIds } });
-    if (members.length !== 3) {
+    if (members.length < 3 || members.length > 4) {
         res.status(400);
-        throw new Error('Panel must have exactly 3 members');
+        throw new Error('Panel must have 3 or 4 members');
     }
 
-    const tutorCount = members.filter(m => m.role === 'tutor').length;
-    if (tutorCount !== 3) {
-        res.status(400);
-        throw new Error('Panel must have 3 tutors');
+    // Expected composition:
+    // 1. Classic: 1 alumni + 2 volunteers
+    // 2. Tutor Panel: 3 tutors
+    // 3. Admin Mixed: Contains at least one admin
+    const alumniCount = members.filter(m => (m.role || '').toLowerCase() === 'alumni').length;
+    const volunteerCount = members.filter(m => (m.role || '').toLowerCase() === 'volunteer').length;
+    const tutorCount = members.filter(m => (m.role || '').toLowerCase() === 'tutor').length;
+    const adminCount = members.filter(m => (m.role || '').toLowerCase() === 'admin').length;
+
+    const isAlumniVolunteerPanel = alumniCount === 1 && volunteerCount === 2 && members.length === 3;
+    const isAllTutorsPanel = tutorCount === 3 && members.length === 3;
+    const isAdminPanel = adminCount >= 1; // Flexible composition if admin is present
+
+    if (!(isAlumniVolunteerPanel || isAllTutorsPanel || isAdminPanel)) {
+        return res.status(400).json({ message: 'Invalid panel composition. Must be (1 Alumni + 2 Volunteers), (3 Tutors), or include an Admin.' });
     }
 
     // Check if timeslot exists and is available
@@ -89,7 +104,7 @@ exports.createPanel = asyncHandler(async (req, res) => {
     const panel = await Panel.create({
         members: memberIds,
         timeslot: timeslotId,
-        meetingLink: meetingLink || `https://meet.google.com/kk-panel-${Date.now()}`,
+        meetingLink: meetingLink || `https://meet.jit.si/kk-panel-${Date.now()}`,
     });
 
     // Mark timeslot as filled
@@ -417,17 +432,23 @@ exports.assignPanelists = asyncHandler(async (req, res) => {
 
     // Verify all members exist and have correct roles
     const members = await User.find({ _id: { $in: memberIds } });
-    if (members.length !== 3) {
+    if (members.length < 3 || members.length > 4) {
         res.status(400);
-        throw new Error('Some members not found');
+        throw new Error('Panel must have 3 or 4 members');
     }
 
-    const alumniCount = members.filter(m => m.role === 'alumni').length;
-    const volunteerCount = members.filter(m => m.role === 'volunteer').length;
+    const alumniCount = members.filter(m => (m.role || '').toLowerCase() === 'alumni').length;
+    const volunteerCount = members.filter(m => (m.role || '').toLowerCase() === 'volunteer').length;
+    const tutorCount = members.filter(m => (m.role || '').toLowerCase() === 'tutor').length;
+    const adminCount = members.filter(m => (m.role || '').toLowerCase() === 'admin').length;
 
-    if (alumniCount !== 1 || volunteerCount !== 2) {
+    const isAlumniVolunteerPanel = alumniCount === 1 && volunteerCount === 2 && members.length === 3;
+    const isAllTutorsPanel = tutorCount === 3 && members.length === 3;
+    const isAdminPanel = adminCount >= 1;
+
+    if (!(isAlumniVolunteerPanel || isAllTutorsPanel || isAdminPanel)) {
         res.status(400);
-        throw new Error('Panel must have 1 alumni and 2 volunteers');
+        throw new Error('Invalid panel composition.');
     }
 
     panel.members = memberIds;

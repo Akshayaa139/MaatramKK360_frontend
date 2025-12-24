@@ -1,3 +1,0 @@
-Login successful. Token obtained.
-Assignments Response: 200 2 assignments
-Notifications Response: 200 

@@ -39,6 +39,25 @@ export default function ProfilePage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingAvailability, setSavingAvailability] = useState(false);
 
+  const getNextOccurrence = (dayName: string) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const targetDay = days.indexOf(dayName);
+    if (targetDay === -1) return '';
+
+    const today = new Date();
+    const currentDay = today.getDay();
+    let daysUntil = targetDay - currentDay;
+
+    if (daysUntil <= 0) {
+      daysUntil += 7;
+    }
+
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + daysUntil);
+
+    return format(nextDate, "MMM do, yyyy");
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -68,24 +87,22 @@ export default function ProfilePage() {
           qualifications: tdoc?.qualifications ? [{ degree: tdoc.qualifications, field: '', institution: '', year: '' }] : []
         });
         const existingAvail = Array.isArray(tdoc?.availability) ? tdoc!.availability : [];
-        const avail: DayAvailability[] = existingAvail.length
-          ? existingAvail.map((a: { day: string; startTime: string; endTime: string }) => ({
-              day: a.day,
-              slots: [{ time: `${a.startTime} - ${a.endTime}`, status: "available" as const }]
-            }))
-          : [
-              { day: 'Monday', slots: [] },
-              { day: 'Tuesday', slots: [] },
-              { day: 'Wednesday', slots: [] },
-              { day: 'Thursday', slots: [] },
-              { day: 'Friday', slots: [] },
-              { day: 'Saturday', slots: [] },
-              { day: 'Sunday', slots: [] }
-            ];
+        const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+        const avail: DayAvailability[] = allDays.map(dayName => {
+          const foundDay = existingAvail.find((a: any) => a.day === dayName);
+          if (foundDay) {
+            return {
+              day: dayName,
+              slots: [{ time: `${foundDay.startTime} - ${foundDay.endTime}`, status: "available" as const }]
+            };
+          }
+          return { day: dayName, slots: [] };
+        });
         setWeeklyAvailability(avail);
         setLeaveDates(tdoc?.leaveDate ? [{ startDate: new Date(tdoc.leaveDate).toISOString().split('T')[0], endDate: new Date(tdoc.leaveDate).toISOString().split('T')[0], reason: 'Leave' }] : []);
         setPrefs({ experienceYears: tdoc?.experienceYears || 0, subjectPreferences: tdoc?.subjectPreferences || [] });
-      } catch {}
+      } catch { }
     };
     load();
   }, [session]);
@@ -112,7 +129,7 @@ export default function ProfilePage() {
           subjects: tdoc?.subjects || t.subjects,
           qualifications: tdoc?.qualifications ? [{ degree: tdoc.qualifications, field: '', institution: '', year: '' }] : t.qualifications,
         }));
-      } catch {}
+      } catch { }
       toast({ title: 'Profile updated', description: 'Your profile information has been saved.' });
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Failed to update profile';
@@ -141,7 +158,7 @@ export default function ProfilePage() {
           slots: [{ time: `${a.startTime} - ${a.endTime}`, status: "available" }]
         }));
         setWeeklyAvailability(avail);
-      } catch {}
+      } catch { }
       toast({ title: 'Availability saved', description: 'Your weekly availability has been updated.' });
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Failed to update availability';
@@ -211,20 +228,18 @@ export default function ProfilePage() {
       try {
         const res = await api.get('/tutor/profile', { headers: authHeader });
         const tdoc = res.data?.tutor || {};
+
         const existingAvail = Array.isArray(tdoc?.availability) ? tdoc!.availability : [];
-        const avail: DayAvailability[] = existingAvail.length
-          ? existingAvail.map((a: { day: string; startTime: string; endTime: string }) => ({ day: a.day, slots: [{ time: `${a.startTime} - ${a.endTime}`, status: 'available' as const }] }))
-          : [
-              { day: 'Monday', slots: [] },
-              { day: 'Tuesday', slots: [] },
-              { day: 'Wednesday', slots: [] },
-              { day: 'Thursday', slots: [] },
-              { day: 'Friday', slots: [] },
-              { day: 'Saturday', slots: [] },
-              { day: 'Sunday', slots: [] }
-            ];
+        const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const avail: DayAvailability[] = allDays.map(dayName => {
+          const foundDay = existingAvail.find((a: any) => a.day === dayName);
+          if (foundDay) {
+            return { day: dayName, slots: [{ time: `${foundDay.startTime} - ${foundDay.endTime}`, status: 'available' as const }] };
+          }
+          return { day: dayName, slots: [] };
+        });
         setWeeklyAvailability(avail);
-      } catch {}
+      } catch { }
       toast({ title: 'Profile & Availability saved', description: 'All changes have been saved successfully.' });
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Failed to save changes';
@@ -293,41 +308,41 @@ export default function ProfilePage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="full-name">Full Name</Label>
-                      <Input id="full-name" value={tutor.name} onChange={(e) => setTutor((t:any) => ({...t, name: e.target.value}))} />
+                      <Input id="full-name" value={tutor.name} onChange={(e) => setTutor((t: any) => ({ ...t, name: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email Address</Label>
-                      <Input id="email" type="email" value={tutor.email} onChange={(e) => setTutor((t:any) => ({...t, email: e.target.value}))} />
+                      <Input id="email" type="email" value={tutor.email} onChange={(e) => setTutor((t: any) => ({ ...t, email: e.target.value }))} />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number</Label>
-                      <Input id="phone" value={tutor.phone} onChange={(e) => setTutor((t:any) => ({...t, phone: e.target.value}))} />
+                      <Input id="phone" value={tutor.phone} onChange={(e) => setTutor((t: any) => ({ ...t, phone: e.target.value }))} />
                     </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subjects">Subjects</Label>
-                    <Select value={tutor.subjects[0] ?? 'Mathematics'} onValueChange={(val) => setTutor((t:any) => ({...t, subjects: [val, ...t.subjects.slice(1)]}))}>
-                      <SelectTrigger id="subjects">
-                        <SelectValue placeholder="Select subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Mathematics">Mathematics</SelectItem>
-                        <SelectItem value="Physics">Physics</SelectItem>
-                        <SelectItem value="Chemistry">Chemistry</SelectItem>
-                        <SelectItem value="Biology">Biology</SelectItem>
-                        <SelectItem value="Computer Science">Computer Science</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="experience">Experience (years)</Label>
-                    <Input id="experience" type="number" value={String(prefs.experienceYears ?? 0)} onChange={(e)=>setPrefs(p=>({ ...p, experienceYears: Number(e.target.value||0) }))} />
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="subjects">Subjects</Label>
+                      <Select value={tutor.subjects[0] ?? 'Mathematics'} onValueChange={(val) => setTutor((t: any) => ({ ...t, subjects: [val, ...t.subjects.slice(1)] }))}>
+                        <SelectTrigger id="subjects">
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Mathematics">Mathematics</SelectItem>
+                          <SelectItem value="Physics">Physics</SelectItem>
+                          <SelectItem value="Chemistry">Chemistry</SelectItem>
+                          <SelectItem value="Biology">Biology</SelectItem>
+                          <SelectItem value="Computer Science">Computer Science</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="experience">Experience (years)</Label>
+                      <Input id="experience" type="number" value={String(prefs.experienceYears ?? 0)} onChange={(e) => setPrefs(p => ({ ...p, experienceYears: Number(e.target.value || 0) }))} />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bio">Professional Bio</Label>
-                    <Textarea id="bio" rows={4} value={tutor.bio} onChange={(e) => setTutor((t:any) => ({...t, bio: e.target.value}))} />
+                    <Textarea id="bio" rows={4} value={tutor.bio} onChange={(e) => setTutor((t: any) => ({ ...t, bio: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
                     <Label>Subject Preferences (priority order)</Label>
@@ -360,7 +375,7 @@ export default function ProfilePage() {
                             <Input
                               id={`degree-${index}`}
                               value={qual.degree}
-                              onChange={(e) => setTutor((t:any) => {
+                              onChange={(e) => setTutor((t: any) => {
                                 const next = [...t.qualifications];
                                 next[index] = { ...next[index], degree: e.target.value };
                                 return { ...t, qualifications: next };
@@ -373,7 +388,7 @@ export default function ProfilePage() {
                             <Input
                               id={`field-${index}`}
                               value={qual.field}
-                              onChange={(e) => setTutor((t:any) => {
+                              onChange={(e) => setTutor((t: any) => {
                                 const next = [...t.qualifications];
                                 next[index] = { ...next[index], field: e.target.value };
                                 return { ...t, qualifications: next };
@@ -386,7 +401,7 @@ export default function ProfilePage() {
                             <Input
                               id={`institution-${index}`}
                               value={qual.institution}
-                              onChange={(e) => setTutor((t:any) => {
+                              onChange={(e) => setTutor((t: any) => {
                                 const next = [...t.qualifications];
                                 next[index] = { ...next[index], institution: e.target.value };
                                 return { ...t, qualifications: next };
@@ -399,7 +414,7 @@ export default function ProfilePage() {
                             <Input
                               id={`year-${index}`}
                               value={qual.year}
-                              onChange={(e) => setTutor((t:any) => {
+                              onChange={(e) => setTutor((t: any) => {
                                 const next = [...t.qualifications];
                                 next[index] = { ...next[index], year: e.target.value };
                                 return { ...t, qualifications: next };
@@ -413,7 +428,7 @@ export default function ProfilePage() {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => setTutor((t:any) => ({
+                        onClick={() => setTutor((t: any) => ({
                           ...t,
                           qualifications: [...t.qualifications, { degree: '', field: '', institution: '', year: '' }]
                         }))}
@@ -442,7 +457,10 @@ export default function ProfilePage() {
                 <form onSubmit={handleAvailabilityUpdate} className="space-y-6">
                   {weeklyAvailability.map((day, dayIndex) => (
                     <div key={dayIndex} className="border rounded-md p-4">
-                      <h4 className="font-medium mb-3">{day.day}</h4>
+                      <h4 className="font-medium mb-3 flex items-center justify-between">
+                        <span>{day.day}</span>
+                        <span className="text-sm text-gray-500 font-normal">{getNextOccurrence(day.day)}</span>
+                      </h4>
                       <div className="space-y-3">
                         {day.slots.map((slot, slotIndex) => (
                           <div key={slotIndex} className="flex items-center justify-between bg-slate-50 p-3 rounded-md">
@@ -465,11 +483,11 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-2 gap-2 mt-2">
                           <div className="space-y-1">
                             <Label htmlFor={`start-${dayIndex}`}>Start</Label>
-                            <Input id={`start-${dayIndex}`} type="time" onChange={(e)=>setNewTimes((prev)=>({ ...prev, [dayIndex]: { ...(prev[dayIndex]||{}), start: e.target.value } }))} />
+                            <Input id={`start-${dayIndex}`} type="time" onChange={(e) => setNewTimes((prev) => ({ ...prev, [dayIndex]: { ...(prev[dayIndex] || {}), start: e.target.value } }))} />
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor={`end-${dayIndex}`}>End</Label>
-                            <Input id={`end-${dayIndex}`} type="time" onChange={(e)=>setNewTimes((prev)=>({ ...prev, [dayIndex]: { ...(prev[dayIndex]||{}), end: e.target.value } }))} />
+                            <Input id={`end-${dayIndex}`} type="time" onChange={(e) => setNewTimes((prev) => ({ ...prev, [dayIndex]: { ...(prev[dayIndex] || {}), end: e.target.value } }))} />
                           </div>
                         </div>
                         <Button

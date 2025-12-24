@@ -43,13 +43,17 @@ const {
   getAllProgramStudents,
   getClassifiedStudents,
   repairStudentData,
-  diagnoseSystem
+  diagnoseSystem,
+  getMeetingLogs
 } = require("../controllers/adminController");
 const { assignTutorToApplication } = require("../controllers/adminController");
 
 // Repair data route (Temporary)
 router.get("/repair-data", repairStudentData);
 router.get("/diagnose", diagnoseSystem);
+
+// Meeting Logs
+router.route("/meetings/logs").get(protect, admin, getMeetingLogs);
 
 // Application Management
 router.route("/applications").get(protect, admin, getAllApplications);

@@ -541,12 +541,50 @@ const getStudentDetails = asyncHandler(async (req, res) => {
     grade: student.grade,
     subjects: student.subjects,
   };
+  // Calculate standardized history for Admin view (matching Tutor view)
+  const history = [];
+  for (const a of assignments) {
+    const sub = (a.submissions || []).find(
+      (s) => String(s.student) === String(student._id)
+    );
+    if (sub) {
+      history.push({
+        id: a._id,
+        date: sub.submittedAt || a.dueDate,
+        type: "Assignment",
+        title: a.title,
+        score: parseFloat(sub.grade) || 0,
+        maxScore: 100,
+        feedback: ""
+      });
+    }
+  }
+  for (const t of tests) {
+    const sub = (t.submissions || []).find(
+      (s) => String(s.student) === String(student._id)
+    );
+    if (sub) {
+      history.push({
+        id: t._id,
+        date: t.date,
+        type: "Test",
+        title: t.title,
+        score: sub.marks || 0,
+        maxScore: 100,
+        feedback: ""
+      });
+    }
+  }
+  history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
   res.json({
     basic,
     strength,
     attendanceRate,
     assignmentReport: assignmentSubmissions,
     testReport: testSubmissions,
+    history, // Added for Tutor-like view
+    notes: "" // Placeholder
   });
 });
 
@@ -554,7 +592,10 @@ const getTutorDetails = asyncHandler(async (req, res) => {
   const tutors = await Tutor.find().populate("user", "name email phone");
   const details = [];
   for (const t of tutors) {
-    const classes = await Class.find({ tutor: t._id });
+    const classes = await Class.find({ tutor: t._id }).populate({
+      path: "students",
+      populate: { path: "user", select: "name" },
+    });
     const attendanceLog = classes.map((c) => ({
       classId: c._id,
       status: c.status,
@@ -572,6 +613,7 @@ const getTutorDetails = asyncHandler(async (req, res) => {
     }));
     details.push({
       id: t._id,
+      userId: t.user?._id, // Added for messaging
       name: t.user?.name || "",
       email: t.user?.email || "",
       phone: t.user?.phone || "",
@@ -582,6 +624,11 @@ const getTutorDetails = asyncHandler(async (req, res) => {
         id: c._id,
         title: c.title,
         subject: c.subject,
+        schedule: c.schedule,
+        students: (c.students || []).map(s => ({
+          id: s._id,
+          name: s.user?.name || "Student"
+        }))
       })),
       attendanceLog,
       timeHandling,
@@ -1123,8 +1170,22 @@ const autoMapSelectedStudents = asyncHandler(async (req, res) => {
 // Returns list of mappings { studentId, studentName, tutorId, tutorName, subject }
 exports.runAutoMap = runAutoMap;
 
+const getMeetingLogs = asyncHandler(async (req, res) => {
+  const sessions = await require("../models/ClassSession").find()
+    .populate('tutor', 'name email') // assuming tutor has name/email or populates user
+    .populate({
+      path: 'tutor',
+      populate: { path: 'user', select: 'name email' }
+    })
+    .populate('class', 'title subject')
+    .sort({ startTime: -1 });
+
+  res.json(sessions);
+});
+
 // At the very end of the file, after all controller functions are defined, add:
 module.exports = {
+  getMeetingLogs,
   getAllApplications,
   getApplicationById,
   updateApplicationStatus,

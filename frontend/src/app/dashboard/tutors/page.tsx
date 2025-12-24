@@ -13,11 +13,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Calendar } from "lucide-react";
+import { Search, Clock, Calendar, MessageCircle } from "lucide-react";
 import api from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 
 type Tutor = {
   id: string;
+  userId?: string; // Added
   name: string;
   email: string;
   phone: string;
@@ -40,6 +44,40 @@ export default function TutorsPage() {
   const [query, setQuery] = useState("");
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [tutors, setTutors] = useState<Tutor[]>([]);
+  const { toast } = useToast();
+
+  // Message Dialog State
+  const [selectedTutor, setSelectedTutor] = useState<Tutor | null>(null);
+  const [messageContent, setMessageContent] = useState("");
+  const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleContact = (tutor: Tutor) => {
+    setSelectedTutor(tutor);
+    setIsMessageOpen(true);
+    setMessageContent("");
+  };
+
+  const handleSendMessage = async () => {
+    if (!selectedTutor || !messageContent.trim()) return;
+
+    setSending(true);
+    try {
+      const authHeader = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
+      await api.post('/messages', {
+        receiver: selectedTutor.userId || selectedTutor.id, // Use userId if available
+        content: messageContent
+      }, { headers: authHeader });
+
+      toast({ title: "Message sent", description: `Message sent to ${selectedTutor.name}` });
+      setIsMessageOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const normalizeSubject = (s: string) => {
     const key = s.trim().toLowerCase();
@@ -178,8 +216,7 @@ export default function TutorsPage() {
                         .slice(0, 5)
                         .map(
                           (t) =>
-                            `${t.day || ""} ${t.startTime || ""}-${
-                              t.endTime || ""
+                            `${t.day || ""} ${t.startTime || ""}-${t.endTime || ""
                             }`
                         )
                         .join(", ")}
@@ -200,13 +237,38 @@ export default function TutorsPage() {
                 )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full">
-                Contact
+              <Button variant="outline" className="w-full" onClick={() => handleContact(tutor)}>
+                <MessageCircle className="h-4 w-4 mr-2" /> Match / Contact
               </Button>
             </CardFooter>
           </Card>
         ))}
       </div>
+
+      <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Message {selectedTutor?.name}</DialogTitle>
+            <DialogDescription>
+              Send a message directly to this tutor's dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Type your message here..."
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+              rows={5}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMessageOpen(false)}>Cancel</Button>
+            <Button onClick={handleSendMessage} disabled={sending || !messageContent.trim()}>
+              {sending ? "Sending..." : "Send Message"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,13 +1,14 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Users, 
-  BookOpen, 
-  Calendar, 
-  MessageSquare 
+import {
+  Users,
+  BookOpen,
+  Calendar,
+  MessageSquare
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -30,7 +31,7 @@ interface Session {
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useTabSession();
   const router = useRouter();
   const [stats, setStats] = useState<Stat[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
@@ -57,11 +58,11 @@ export default function DashboardPage() {
     }
     const fetchData = async () => {
       try {
-        const authHeader = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
+        // Auth handled by interceptor
         const [statsRes, activitiesRes, sessionsRes] = await Promise.all([
-          api.get("/dashboard/stats", { headers: authHeader }),
-          api.get("/dashboard/recent-activities", { headers: authHeader }),
-          api.get("/dashboard/upcoming-sessions", { headers: authHeader }),
+          api.get("/dashboard/stats"),
+          api.get("/dashboard/recent-activities"),
+          api.get("/dashboard/upcoming-sessions"),
         ]);
 
         const { tutorCount, studentCount, upcomingClassesCount, engagementRate } = statsRes.data;
@@ -160,7 +161,7 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Upcoming Sessions</CardTitle>
