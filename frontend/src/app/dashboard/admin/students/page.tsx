@@ -20,6 +20,7 @@ type Classified = {
   tenthPercentage: string;
   currentPercentage: string;
   annualIncome: string;
+  dropoutRisk: string;
 };
 
 export default function ManageStudents() {
@@ -104,6 +105,7 @@ export default function ManageStudents() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Medium</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tutors</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dropout Prediction</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -118,6 +120,21 @@ export default function ManageStudents() {
                         {r.tutors.map(t => (<Badge key={t.id} variant="secondary">{t.name}</Badge>))}
                         {r.tutors.length === 0 && (<Badge variant="outline">No tutors mapped</Badge>)}
                       </div>
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      <Badge
+                        variant={
+                          (r as any).dropoutRisk === "Perfect" ? "default" :
+                            (r as any).dropoutRisk === "Maybe Dropout" ? "outline" :
+                              (r as any).dropoutRisk === "Sure Dropout" ? "destructive" : "secondary"
+                        }
+                        className={
+                          (r as any).dropoutRisk === "Perfect" ? "bg-green-100 text-green-800 hover:bg-green-100" :
+                            (r as any).dropoutRisk === "Maybe Dropout" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" : ""
+                        }
+                      >
+                        {(r as any).dropoutRisk || "No Data"}
+                      </Badge>
                     </td>
                   </tr>
                 ))}
@@ -135,7 +152,7 @@ export default function ManageStudents() {
           <p className="text-gray-600">Classified by grade with full details from initial application. Filter by grade and subjects.</p>
           <div className="flex flex-col md:flex-row gap-3 md:items-center">
             <select className="w-full md:w-40 rounded-md border px-3 py-2" value={gradeFilter} onChange={(e) => setGradeFilter(e.target.value)}>
-              {['', '10', '11', '12'].map(g => (<option key={g||'all'} value={g}>{g ? `${g}th` : 'All Grades'}</option>))}
+              {['', '10', '11', '12'].map(g => (<option key={g || 'all'} value={g}>{g ? `${g}th` : 'All Grades'}</option>))}
             </select>
             <select className="w-full md:w-40 rounded-md border px-3 py-2" value={classSubj} onChange={(e) => setClassSubj(e.target.value)}>
               <option value="all">All Subjects</option>
@@ -156,6 +173,7 @@ export default function ManageStudents() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">10th %</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Current %</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Income</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dropout Prediction</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -175,11 +193,26 @@ export default function ManageStudents() {
                     <td className="px-4 py-2 text-sm">{c.tenthPercentage || '—'}</td>
                     <td className="px-4 py-2 text-sm">{c.currentPercentage || '—'}</td>
                     <td className="px-4 py-2 text-sm">{c.annualIncome || '—'}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <Badge
+                        variant={
+                          c.dropoutRisk === "Perfect" ? "default" :
+                            c.dropoutRisk === "Maybe Dropout" ? "outline" :
+                              c.dropoutRisk === "Sure Dropout" ? "destructive" : "secondary"
+                        }
+                        className={
+                          c.dropoutRisk === "Perfect" ? "bg-green-100 text-green-800 hover:bg-green-100" :
+                            c.dropoutRisk === "Maybe Dropout" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" : ""
+                        }
+                      >
+                        {c.dropoutRisk || "No Data"}
+                      </Badge>
+                    </td>
                   </tr>
                 ))}
                 {classified.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-4 py-6 text-center text-sm text-gray-500">No 12th students found.</td>
+                    <td colSpan={11} className="px-4 py-6 text-center text-sm text-gray-500">No 12th students found.</td>
                   </tr>
                 )}
               </tbody>

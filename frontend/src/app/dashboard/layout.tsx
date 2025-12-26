@@ -25,6 +25,8 @@ import {
   Award,
 } from "lucide-react";
 import { ToastProvider, ToastViewport } from "@/components/ui/toast";
+import ChatWidget from "@/components/ChatWidget";
+import api from "@/lib/api";
 
 export default function DashboardLayout({
   children,
@@ -127,11 +129,8 @@ export default function DashboardLayout({
     if (isStudent) {
       const fetchNotifications = async () => {
         try {
-          const res = await fetch('/api/students/notifications'); // Use fetch or axios
-          if (res.ok) {
-            const data = await res.json();
-            setNotificationCount(data.assignments || 0);
-          }
+          const res = await api.get('/students/notifications');
+          setNotificationCount(res.data.assignments || 0);
         } catch (e) {
           console.error("Failed to fetch notifications");
         }
@@ -325,6 +324,7 @@ export default function DashboardLayout({
         </div>
       </div>
       <ToastViewport />
+      <ChatWidget />
     </ToastProvider>
   );
 }

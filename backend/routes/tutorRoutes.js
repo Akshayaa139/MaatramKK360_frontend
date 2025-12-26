@@ -492,103 +492,30 @@ router.get("/progress", protect, authorize("tutor"), async (req, res) => {
     const assignments = await require("../models/Assignment").find({ class: { $in: classIds } });
     const tests = await require("../models/Test").find({ class: { $in: classIds } });
 
+    const { calculateStudentProgress } = require("../services/studentAnalyticsService");
     const results = [];
     for (const [sid, data] of studentMap.entries()) {
-      const { doc: s, classes: classNames } = data;
-
-      // Attendance
-      const att = Array.isArray(s.attendance) ? s.attendance : [];
-      const present = att.filter(a => a.status === 'present').length;
-      const totalAtt = att.length;
-      const attendancePct = totalAtt ? Math.round((present / totalAtt) * 100) : 0;
-
-      // Assignments
-      const studentAssig = assignments.filter(a =>
-        (a.submissions || []).some(sub => String(sub.student) === sid)
-      );
-      const totalAssig = assignments.length; // Approximate: assuming all assignments in class apply to student
-      // A better way is filtering assignments by the student's specific class, but simplification:
-      // We will filter assignments that belong to the classes this student is in.
-      // But we have student -> classes map. 
-      // Let's refine: assignments for classes THIS student is enrolled in.
-      const studentClassIds = classDocs.filter(c => c.students.some(st => String(st._id) === sid)).map(c => String(c._id));
-      const relevantAssignments = assignments.filter(a => studentClassIds.includes(String(a.class)));
-      const relevantTests = tests.filter(t => studentClassIds.includes(String(t.class)));
-
-      const submittedAssig = relevantAssignments.filter(a =>
-        (a.submissions || []).some(sub => String(sub.student) === sid && sub.grade)
-      );
-
-      let assigScoreSum = 0;
-      let assigCount = 0;
-      submittedAssig.forEach(a => {
-        const sub = a.submissions.find(sub => String(sub.student) === sid);
-        // Grade might be "A", "80/100" or just "80". Let's try to parse number.
-        const val = parseFloat(sub.grade);
-        if (!isNaN(val)) {
-          assigScoreSum += val; // Assuming grade is out of 100 or normalized
-          assigCount++;
-        }
-      });
-      const assigAvg = assigCount ? Math.round(assigScoreSum / assigCount) : 0;
-
-      // Tests
-      const submittedTests = relevantTests.filter(t =>
-        (t.submissions || []).some(sub => String(sub.student) === sid && typeof sub.marks === 'number')
-      );
-      let testScoreSum = 0;
-      let testCount = 0;
-      submittedTests.forEach(t => {
-        const sub = t.submissions.find(sub => String(sub.student) === sid);
-        testScoreSum += (sub.marks || 0);
-        testCount++;
-      });
-      // Assuming max marks is usually 100 or available in test. But for now just avg the raw marks
-      // Ideally we need test.totalMarks. stored in models/Test.js? No, just duration/date. 
-      // We'll calculate percentage if maxScore is available in performance, but here we depend on `Test` model.
-      // Let's assume marks are percent for now or raw.
-      const testAvg = testCount ? Math.round(testScoreSum / testCount) : 0;
-
-      // Trend: Compare average of last 3 items vs previous
-      // Combine all temporal data
-      const history = [];
-      relevantAssignments.forEach(a => {
-        const sub = (a.submissions || []).find(sub => String(sub.student) === sid);
-        if (sub) history.push({ date: sub.submittedAt || a.dueDate, score: parseFloat(sub.grade) || 0 });
-      });
-      relevantTests.forEach(t => {
-        const sub = (t.submissions || []).find(sub => String(sub.student) === sid);
-        if (sub) history.push({ date: sub.submittedAt || t.date, score: sub.marks || 0 });
-      });
-      history.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      let trend = "stable";
-      if (history.length >= 2) {
-        const recent = history.slice(0, Math.ceil(history.length / 2));
-        const old = history.slice(Math.ceil(history.length / 2));
-        const avgRecent = recent.reduce((s, i) => s + i.score, 0) / recent.length;
-        const avgOld = old.reduce((s, i) => s + i.score, 0) / old.length;
-        if (avgRecent > avgOld + 5) trend = "up";
-        else if (avgRecent < avgOld - 5) trend = "down";
+      const analytics = await calculateStudentProgress(sid);
+      if (analytics) {
+        results.push({
+          id: sid,
+          name: analytics.name,
+          class: data.classes[0] || "General",
+          attendance: Math.round(analytics.attendanceRate),
+          assignments: {
+            completed: analytics.assignmentCompleted,
+            total: analytics.assignmentTotal,
+            avgScore: Math.round(analytics.assignmentAvg)
+          },
+          tests: {
+            completed: analytics.testCompleted,
+            total: analytics.testTotal,
+            avgScore: Math.round(analytics.testAvg)
+          },
+          trend: analytics.trend,
+          dropoutRisk: analytics.dropoutRisk
+        });
       }
-
-      results.push({
-        id: s._id,
-        name: s.user?.name || "Student",
-        class: classNames[0] || "General", // Primary class
-        attendance: attendancePct,
-        assignments: {
-          completed: submittedAssig.length,
-          total: relevantAssignments.length,
-          avgScore: assigAvg
-        },
-        tests: {
-          completed: submittedTests.length,
-          total: relevantTests.length,
-          avgScore: testAvg
-        },
-        trend
-      });
     }
 
     res.json(results);

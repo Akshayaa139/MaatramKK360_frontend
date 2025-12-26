@@ -24,7 +24,7 @@ interface Test {
   description: string;
   date?: string;
   duration?: string;
-  file?: File | null;
+
   classId?: string;
 }
 
@@ -53,7 +53,7 @@ export function TestDialog({
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [duration, setDuration] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+
   const [classId, setClassId] = useState("");
 
   useEffect(() => {
@@ -67,8 +67,7 @@ export function TestDialog({
       setDescription("");
       setDate("");
       setDuration("");
-      setFile(null);
-      setFile(null);
+
       setClassId(selectedClassId && selectedClassId !== "all" ? selectedClassId : "");
     }
   }, [test, isOpen, selectedClassId]);
@@ -78,7 +77,7 @@ export function TestDialog({
       alert("Please select a class");
       return;
     }
-    onSubmit({ _id: test?._id, title, description, date, duration, file, classId });
+    onSubmit({ _id: test?._id, title, description, date, duration, classId });
   };
 
   return (
@@ -149,16 +148,7 @@ export function TestDialog({
               placeholder="Enter test duration"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="file">Test File</Label>
-            <Input
-              id="file"
-              type="file"
-              onChange={(e) =>
-                setFile(e.target.files ? e.target.files[0] : null)
-              }
-            />
-          </div>
+
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

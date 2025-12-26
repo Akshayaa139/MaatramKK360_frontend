@@ -21,6 +21,7 @@ type Student = {
   attendanceRate: number;
   upcomingClasses: number;
   completedClasses: number;
+  dropoutRisk?: string;
 };
 
 export default function StudentsPage() {
@@ -90,8 +91,25 @@ export default function StudentsPage() {
             {filtered.map((s) => (
               <Card key={s.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{s.name}</CardTitle>
-                  <CardDescription>{s.email}</CardDescription>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">{s.name}</CardTitle>
+                      <CardDescription>{s.email}</CardDescription>
+                    </div>
+                    <Badge
+                      variant={
+                        s.dropoutRisk === "Perfect" ? "default" :
+                          s.dropoutRisk === "Maybe Dropout" ? "outline" :
+                            s.dropoutRisk === "Sure Dropout" ? "destructive" : "secondary"
+                      }
+                      className={
+                        s.dropoutRisk === "Perfect" ? "bg-green-100 text-green-800 hover:bg-green-100 border-none" :
+                          s.dropoutRisk === "Maybe Dropout" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-none" : ""
+                      }
+                    >
+                      {s.dropoutRisk || "No Data"}
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">

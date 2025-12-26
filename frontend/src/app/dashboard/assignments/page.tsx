@@ -38,7 +38,6 @@ interface Test {
   description?: string;
   date?: string;
   duration?: string;
-  file?: File | null;
   status?: string;
   classId?: string;
 }
@@ -243,9 +242,7 @@ export default function AssignmentsPage() {
         formData.append("description", safeTest.description ?? "");
         formData.append("date", safeTest.date || "");
         formData.append("duration", safeTest.duration ?? "");
-        if (safeTest.file) {
-          formData.append("file", safeTest.file);
-        }
+
 
         if (safeTest._id) {
           // Update

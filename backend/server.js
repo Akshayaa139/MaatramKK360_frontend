@@ -85,6 +85,7 @@ app.use("/api/tutor", require("./routes/tutorRoutes"));
 app.use("/api/study-materials", require("./routes/studyMaterialRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes")); // Added
 app.use("/api/reports", require("./routes/reportRoutes"));
+app.use("/api/ai", require("./routes/aiRoutes"));
 // Serve uploads statically for download/access
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/flashcards", require("./routes/flashcardRoutes"));

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const asyncHandler = require("express-async-handler");
 const Application = require("../models/Application");
 const Televerification = require("../models/Televerification");
@@ -14,6 +15,7 @@ const Student = require("../models/Student");
 const Assignment = require("../models/Assignment");
 const Test = require("../models/Test");
 const NotificationService = require("../services/notificationService");
+const { calculateStudentProgress } = require("../services/studentAnalyticsService");
 
 // --- HELPER FUNCTIONS (Hoisted) ---
 
@@ -403,6 +405,18 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
     const subjects = Array.isArray(app.educationalInfo?.subjects)
       ? app.educationalInfo.subjects
       : [];
+    // Find the student linked to this application once
+    let studentDoc = null;
+    const email = app.personalInfo?.email || app.email;
+    if (email) {
+      const userDoc = await User.findOne({
+        $or: [{ email: email }, { "personalInfo.email": email }]
+      });
+      if (userDoc) {
+        studentDoc = await Student.findOne({ user: userDoc._id });
+      }
+    }
+
     for (const s of subjects) {
       const name = app.personalInfo?.fullName || app.name || "";
       const medium = s.medium || app.educationalInfo?.medium || "";
@@ -411,27 +425,17 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
       let tutors = [];
 
       // Fix: Query Class to see if a specific tutor is assigned for THIS subject
-      // We need to find the student first
-      const email = app.personalInfo?.email || app.email;
-      if (email) {
-        const user = await User.findOne({
-          $or: [{ email: email }, { "personalInfo.email": email }]
-        });
-        if (user) {
-          const student = await Student.findOne({ user: user._id });
-          if (student) {
-            // Find class for this student + subject
-            // Note: Class subject must match 'subjectName'
-            const cls = await require('../models/Class').findOne({
-              students: student._id,
-              subject: subjectName
-            }).populate('tutor');
+      if (studentDoc) {
+        // Find class for this student + subject
+        // Note: Class subject must match 'subjectName'
+        const cls = await Class.findOne({
+          students: studentDoc._id,
+          subject: subjectName
+        }).populate('tutor');
 
-            if (cls && cls.tutor) {
-              const assignedTutor = await Tutor.findById(cls.tutor._id).populate('user', 'name');
-              if (assignedTutor) tutors = [assignedTutor];
-            }
-          }
+        if (cls && cls.tutor) {
+          const assignedTutor = await Tutor.findById(cls.tutor._id).populate('user', 'name');
+          if (assignedTutor) tutors = [assignedTutor];
         }
       }
 
@@ -459,6 +463,14 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
         id: t._id,
         name: t.user?.name || "",
       }));
+
+      // Dropout Prediction
+      let dropoutRisk = "No Data";
+      if (studentDoc) {
+        const analytics = await calculateStudentProgress(studentDoc._id);
+        dropoutRisk = analytics?.dropoutRisk || "No Data";
+      }
+
       result.push({
         id: app._id,
         applicationId: app.applicationNumber,
@@ -466,6 +478,7 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
         subject: subjectName,
         medium,
         tutors: tutorList,
+        dropoutRisk,
       });
     }
   }
@@ -473,10 +486,37 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
 });
 
 const getStudentDetails = asyncHandler(async (req, res) => {
-  const student = await Student.findById(req.params.id).populate(
-    "user",
-    "name email phone"
-  );
+  let student = null;
+  const searchId = req.params.id;
+
+  // 1. Try Find by MongoDB _id (if valid format)
+  if (mongoose.Types.ObjectId.isValid(searchId)) {
+    student = await Student.findById(searchId).populate(
+      "user",
+      "name email phone"
+    );
+  }
+
+  // 2. If not found or not valid ObjectID, try finding via Application ID / Number
+  if (!student) {
+    const app = await Application.findOne({
+      $or: [{ applicationId: searchId }, { applicationNumber: searchId }]
+    });
+
+    if (app) {
+      const email = app.personalInfo?.email || app.email;
+      const user = await User.findOne({
+        $or: [{ email }, { "personalInfo.email": email }]
+      });
+      if (user) {
+        student = await Student.findOne({ user: user._id }).populate(
+          "user",
+          "name email phone"
+        );
+      }
+    }
+  }
+
   if (!student) return res.status(404).json({ message: "Student not found" });
   const classes = await Class.find({ students: student._id }).populate("tutor");
   const attendance = Array.isArray(student.attendance)
@@ -577,6 +617,9 @@ const getStudentDetails = asyncHandler(async (req, res) => {
   }
   history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+  const analytics = await calculateStudentProgress(student._id);
+  const dropoutRisk = analytics?.dropoutRisk || "No Data";
+
   res.json({
     basic,
     strength,
@@ -584,7 +627,8 @@ const getStudentDetails = asyncHandler(async (req, res) => {
     assignmentReport: assignmentSubmissions,
     testReport: testSubmissions,
     history, // Added for Tutor-like view
-    notes: "" // Placeholder
+    notes: "", // Placeholder
+    dropoutRisk
   });
 });
 
@@ -654,6 +698,9 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
     const completedClasses = classes.filter(
       (c) => c.status === "completed"
     ).length;
+    const analytics = await calculateStudentProgress(s._id);
+    const dropoutRisk = analytics?.dropoutRisk || "No Data";
+
     result.push({
       id: s._id,
       name: s.user?.name || "",
@@ -664,6 +711,7 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
       attendanceRate,
       upcomingClasses,
       completedClasses,
+      dropoutRisk,
     });
   }
   res.json(result);
@@ -703,6 +751,9 @@ const getClassifiedStudents = asyncHandler(async (req, res) => {
     const subjects = Array.isArray(educational.subjects)
       ? educational.subjects.map((x) => x?.name || x)
       : s.subjects || [];
+    const analytics = await calculateStudentProgress(s._id);
+    const dropoutRisk = analytics?.dropoutRisk || "No Data";
+
     results.push({
       id: s._id,
       name: s.user?.name || personal.fullName || "",
@@ -716,6 +767,7 @@ const getClassifiedStudents = asyncHandler(async (req, res) => {
       tenthPercentage: educational.tenthPercentage || "",
       currentPercentage: educational.currentPercentage || "",
       annualIncome: family.annualIncome || "",
+      dropoutRisk,
     });
   }
   res.json(results);

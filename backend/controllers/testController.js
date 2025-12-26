@@ -55,7 +55,7 @@ const createTest = asyncHandler(async (req, res) => {
     description,
     date,
     duration: Number(duration),
-    fileUrl: req.file ? req.file.path : undefined,
+
   });
   const created = await test.save();
   res.status(201).json(created);
@@ -75,7 +75,7 @@ const updateTest = asyncHandler(async (req, res) => {
   if (typeof description === 'string') test.description = description;
   if (date) test.date = date;
   if (duration !== undefined) test.duration = Number(duration);
-  if (req.file) test.fileUrl = req.file.path;
+
   const updated = await test.save();
   res.json(updated);
 });
