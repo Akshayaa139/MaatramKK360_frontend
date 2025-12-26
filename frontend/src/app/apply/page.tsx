@@ -20,7 +20,10 @@ import { Textarea } from "@/components/ui/textarea";
 // Uses handleInputChange for auto-transliteration instead.
 import { Checkbox } from "@/components/ui/checkbox";
 import dynamic from "next/dynamic";
-const getTransliterateSuggestionsDynamic = () => import("@ai4bharat/indic-transliterate").then(m => m.getTransliterateSuggestions);
+const getTransliterateSuggestionsDynamic = () =>
+  import("@ai4bharat/indic-transliterate").then(m =>
+    m.getTransliterateSuggestions || (m as any).default?.getTransliterateSuggestions || (m as any).default
+  );
 
 
 
@@ -115,7 +118,11 @@ export default function ApplyPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    getTransliterateSuggestionsDynamic().then(setGetSuggestFn).catch(() => { });
+    getTransliterateSuggestionsDynamic().then(fn => {
+      if (typeof fn === 'function') {
+        setGetSuggestFn(() => fn);
+      }
+    }).catch(() => { });
   }, []);
 
   const content = {
@@ -244,15 +251,21 @@ export default function ApplyPage() {
       "fatherName", "motherName", "fatherOccupation", "motherOccupation",
       "whyKK", "goals", "challenges"
     ]);
-    if (language === "ta" && taFields.has(name) && getSuggestFn) {
-      const parts = value.split(/\s+/).filter(Boolean);
+
+    if (language === "ta" && taFields.has(name) && typeof getSuggestFn === 'function') {
+      const parts = (value || "").split(/\s+/).filter(Boolean);
       const out: string[] = [];
       for (const p of parts) {
         try {
-          const s = await getSuggestFn(p, "google", "", { lang: "ta", numOptions: 1, showCurrentWordAsLastSuggestion: true });
-          const r = Array.isArray(s) && s.length ? s[0] : p;
-          out.push(r);
-        } catch {
+          if (typeof p === 'string' && p.trim()) {
+            const s = await getSuggestFn(p, "google", "", { lang: "ta", numOptions: 1, showCurrentWordAsLastSuggestion: true });
+            const r = Array.isArray(s) && s.length ? (typeof s[0] === 'string' ? s[0] : (s[0] as any).text || p) : p;
+            out.push(r);
+          } else {
+            out.push(p);
+          }
+        } catch (err) {
+          console.warn("Transliteration error for word:", p, err);
           out.push(p);
         }
       }
@@ -311,30 +324,21 @@ export default function ApplyPage() {
     }
 
     try {
-      const toTamilIfNeeded = async (s: string) => {
-        if (language !== 'ta') return s;
-        const text = String(s || '');
-        const hasLatin = /[A-Za-z]/.test(text);
-        if (!hasLatin) return text;
+      const toTamilIfNeeded = async (val: any) => {
+        if (language !== 'ta' || typeof getSuggestFn !== 'function') return val;
+        const text = String(val || '').trim();
+        if (!text || !/[A-Za-z]/.test(text)) return text;
         try {
-          if (getSuggestFn) {
-            // Defensive check: ensure text is a valid string
-            if (typeof text !== 'string') return text;
-
-            const suggestions = await getSuggestFn(text, "google", "", { lang: 'ta' });
-            if (Array.isArray(suggestions) && suggestions.length > 0) {
-              const first = suggestions[0] as unknown;
-              if (typeof first === 'string') return first;
-              if (first && typeof first === 'object' && 'text' in first) {
-                return (first as { text: string }).text;
-              }
-              if (first && typeof first === 'object' && 'tgt' in first) {
-                return (first as { tgt: string }).tgt;
-              }
+          const suggestions = await getSuggestFn(text, "google", "", { lang: 'ta' });
+          if (Array.isArray(suggestions) && suggestions.length > 0) {
+            const first = suggestions[0];
+            if (typeof first === 'string') return first;
+            if (first && typeof first === 'object') {
+              return (first as any).text || (first as any).tgt || text;
             }
           }
-        } catch (e) {
-          console.warn("Transliteration error for word:", text, e);
+        } catch (err) {
+          console.warn("Transliteration error for field:", text, err);
         }
         return text;
       };
@@ -356,14 +360,9 @@ export default function ApplyPage() {
       }
 
       const formDataToSend = new FormData();
-
-      // Add all form fields (excluding files)
       Object.keys(normalized).forEach(key => {
         const value = normalized[key as keyof FormData];
-        if (key.includes('File')) {
-          // Skip file fields, they'll be added separately
-          return;
-        }
+        if (key.includes('File')) return;
         if (Array.isArray(value)) {
           formDataToSend.append(key, JSON.stringify(value));
         } else if (value !== null && value !== undefined && value !== '') {
@@ -371,19 +370,10 @@ export default function ApplyPage() {
         }
       });
 
-      // Add files
-      if (normalized.photoFile) {
-        formDataToSend.append('photoFile', normalized.photoFile);
-      }
-      if (normalized.marksheetFile) {
-        formDataToSend.append('marksheetFile', normalized.marksheetFile);
-      }
-      if (normalized.incomeCertificateFile) {
-        formDataToSend.append('incomeCertificateFile', normalized.incomeCertificateFile);
-      }
-      if (normalized.idProofFile) {
-        formDataToSend.append('idProofFile', normalized.idProofFile);
-      }
+      if (normalized.photoFile) formDataToSend.append('photoFile', normalized.photoFile);
+      if (normalized.marksheetFile) formDataToSend.append('marksheetFile', normalized.marksheetFile);
+      if (normalized.incomeCertificateFile) formDataToSend.append('incomeCertificateFile', normalized.incomeCertificateFile);
+      if (normalized.idProofFile) formDataToSend.append('idProofFile', normalized.idProofFile);
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/applications/submit`, {
@@ -392,20 +382,15 @@ export default function ApplyPage() {
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Application submission failed");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Application submission failed");
-      }
-
-      // Redirect to success page with application number from backend
       if (data.applicationId) {
         router.push(`/application-success?applicationNumber=${data.applicationId}`);
       } else {
         router.push(`/application-success`);
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Application submission failed";
-      setError(errorMessage);
+    } catch (err: any) {
+      setError(err.message || "Application submission failed");
       setIsLoading(false);
     }
   };
