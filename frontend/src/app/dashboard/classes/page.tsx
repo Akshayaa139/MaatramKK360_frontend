@@ -5,11 +5,13 @@ import { useState, useEffect } from "react";
 import { useTabSession } from "@/hooks/useTabSession";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, BookOpen, Loader2, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Users, BookOpen, Loader2, AlertCircle, Video, FileText, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import api from "@/lib/api";
 
 const nextDateForDay = (day: string) => {
@@ -35,8 +37,10 @@ interface Class {
   maxParticipants?: number;
   status?: 'scheduled' | 'cancelled' | 'completed' | 'full';
   attendance?: 'present' | 'absent' | 'pending';
-  recording?: string;
-  notes?: string;
+  recordingLink?: string;
+  notesLink?: string;
+  isEnrolled?: boolean;
+  isLive?: boolean;
 }
 
 export default function ClassesPage() {
@@ -48,6 +52,12 @@ export default function ClassesPage() {
   const [enrolledClasses, setEnrolledClasses] = useState<string[]>([]);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [tutorFilter, setTutorFilter] = useState<string>('all');
+
+  // Session Details
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [classSessions, setClassSessions] = useState<any[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -74,13 +84,19 @@ export default function ClassesPage() {
             title: c.title,
             description: c.subject || '',
             tutor: c.tutor?.name || 'Unknown', // Student API returns { tutor: { name: ... } }
-            date: nextDateForDay(c.schedule?.day || ''),
+            date: c.schedule?.date || nextDateForDay(c.schedule?.day || ''),
             time: `${c.schedule?.startTime || ''} - ${c.schedule?.endTime || ''}`,
             subject: c.subject,
             status: c.status === 'completed' ? 'completed' : (c.status === 'cancelled' ? 'cancelled' : 'scheduled'),
-            participants: undefined, // Student doesn't see participant count in this API
+            participants: undefined,
             maxParticipants: undefined,
+            recordingLink: c.recordingLink,
+            notesLink: c.notesLink,
+            isEnrolled: c.isEnrolled,
+            isLive: c.isLive,
           }));
+          const enrolled = data.filter((c: any) => c.isEnrolled).map((c: any) => c.id || c._id);
+          setEnrolledClasses(enrolled);
         } else {
           // Admin/Tutor default mapping
           mapped = data.map((c: any) => ({
@@ -88,12 +104,15 @@ export default function ClassesPage() {
             title: c.title,
             description: c.subject || '',
             tutor: c.tutor?.user?.name || (session as any)?.user?.name || 'Unknown',
-            date: nextDateForDay(c.schedule?.day || ''),
+            date: c.schedule?.date || nextDateForDay(c.schedule?.day || ''),
             time: `${c.schedule?.startTime || ''} - ${c.schedule?.endTime || ''}`,
             subject: c.subject,
             status: c.status === 'completed' ? 'completed' : (c.status === 'cancelled' ? 'cancelled' : 'scheduled'),
             participants: Array.isArray(c.students) ? c.students.length : undefined,
             maxParticipants: undefined,
+            recordingLink: c.recordingLink,
+            notesLink: c.notesLink,
+            isLive: c.isLive,
           }));
         }
 
@@ -107,9 +126,9 @@ export default function ClassesPage() {
             // m.date is already an ISO string for the day
             const d = new Date(m.date);
             // m.time format "HH:mm - HH:mm"
-            const startStr = m.time.split(' - ')[0];
-            if (startStr) {
-              const [hours, minutes] = startStr.split(':').map(Number);
+            const endStr = m.time.split(' - ')[1];
+            if (endStr) {
+              const [hours, minutes] = endStr.split(':').map(Number);
               if (!isNaN(hours)) {
                 d.setHours(hours, minutes || 0, 0, 0);
               }
@@ -172,6 +191,20 @@ export default function ClassesPage() {
         description: "Failed to enroll in class",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleViewDetails = async (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsDetailsModalOpen(true);
+    setLoadingSessions(true);
+    try {
+      const res = await api.get(`/classes/${classItem.id}/sessions`);
+      setClassSessions(res.data);
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to fetch session details.", variant: "destructive" });
+    } finally {
+      setLoadingSessions(false);
     }
   };
 
@@ -252,14 +285,21 @@ export default function ClassesPage() {
                   <CardHeader className="pb-2 flex-grow">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{classItem.title}</CardTitle>
-                      <Badge
-                        variant={
-                          classItem.status === "full" ? "secondary" :
-                            classItem.status === "cancelled" ? "destructive" : "default"
-                        }
-                      >
-                        {classItem.status?.toUpperCase()}
-                      </Badge>
+                      <div className="flex gap-1">
+                        {classItem.isLive && (
+                          <Badge className="bg-red-600 hover:bg-red-700 animate-pulse">
+                            LIVE
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={
+                            classItem.status === "full" ? "secondary" :
+                              classItem.status === "cancelled" ? "destructive" : "default"
+                          }
+                        >
+                          {classItem.status?.toUpperCase()}
+                        </Badge>
+                      </div>
                     </div>
                     <CardDescription className="line-clamp-2">{classItem.description}</CardDescription>
                   </CardHeader>
@@ -298,25 +338,66 @@ export default function ClassesPage() {
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter>
-                    {/* Hide Enroll button for admins */
-                      !isAdmin && (
-                        <Button
-                          className="w-full"
-                          disabled={
-                            classItem.status === "full" ||
-                            classItem.status === "cancelled" ||
-                            enrolledClasses.includes(classItem.id)
-                          }
-                          onClick={() => handleEnroll(classItem.id)}
-                        >
-                          {enrolledClasses.includes(classItem.id)
-                            ? "Enrolled"
-                            : classItem.status === "full"
-                              ? "Class Full"
-                              : "Enroll Now"}
+                  <CardFooter className="flex flex-wrap gap-2">
+                    {/* Show Enroll button if not enrolled and not admin */}
+                    {!isAdmin && !enrolledClasses.includes(classItem.id) && (
+                      <Button
+                        className="flex-1 min-w-[120px]"
+                        disabled={
+                          classItem.status === "full" ||
+                          classItem.status === "cancelled"
+                        }
+                        onClick={() => handleEnroll(classItem.id)}
+                      >
+                        {classItem.status === "full"
+                          ? "Class Full"
+                          : "Enroll Now"}
+                      </Button>
+                    )}
+
+                    {/* Show Join button if enrolled and not admin */}
+                    {enrolledClasses.includes(classItem.id) && !isAdmin && (
+                      <Button
+                        className={`flex-1 min-w-[120px] text-white ${classItem.isLive
+                          ? "bg-red-600 hover:bg-red-700 animate-pulse shadow-lg"
+                          : "bg-green-600 hover:bg-green-700"
+                          }`}
+                        asChild
+                      >
+                        <Link href={`/dashboard/meeting/${classItem.id}`}>
+                          <Video className="h-4 w-4 mr-2" />
+                          {classItem.isLive ? "JOIN LIVE NOW" : "Join Class"}
+                        </Link>
+                      </Button>
+                    )}
+                    <div className="flex flex-wrap gap-2 w-full pt-2">
+                      {classItem.recordingLink && (
+                        <Button variant="outline" className="flex-1 min-w-[120px] bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" asChild>
+                          <a
+                            href={classItem.recordingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center font-medium"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Recording
+                          </a>
                         </Button>
                       )}
+                      {classItem.notesLink && (
+                        <Button variant="outline" className="flex-1 min-w-[120px] bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700" asChild>
+                          <a
+                            href={classItem.notesLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center font-medium"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Class Notes
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </CardFooter>
                 </Card>
               ))}
@@ -374,57 +455,39 @@ export default function ClassesPage() {
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex gap-2 mt-auto">
-                    <Button variant="outline" className="flex-1" asChild>
-                      <a
-                        href={classItem.recording}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="mr-2"
-                        >
-                          <polygon points="23 7 16 12 23 17 23 7" />
-                          <rect width="15" height="14" x="1" y="5" rx="2" ry="2" />
-                        </svg>
-                        Recording
-                      </a>
+                  <CardFooter className="flex flex-wrap gap-2 mt-auto">
+                    <Button variant="outline" className="flex-1 min-w-[100px]" onClick={() => handleViewDetails(classItem)}>
+                      <Users className="h-4 w-4 mr-2" />
+                      View Details
                     </Button>
-                    <Button variant="outline" className="flex-1" asChild>
-                      <a
-                        href={classItem.notes}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="mr-2"
-                        >
-                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                          <polyline points="14 2 14 8 20 8" />
-                        </svg>
-                        Notes
-                      </a>
-                    </Button>
+                    <div className="flex flex-wrap gap-2 w-full pt-2">
+                      {classItem.recordingLink && (
+                        <Button variant="outline" className="flex-1 min-w-[120px] bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700" asChild>
+                          <a
+                            href={classItem.recordingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center font-medium"
+                          >
+                            <Video className="h-4 w-4 mr-2" />
+                            Recording
+                          </a>
+                        </Button>
+                      )}
+                      {classItem.notesLink && (
+                        <Button variant="outline" className="flex-1 min-w-[120px] bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700" asChild>
+                          <a
+                            href={classItem.notesLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center font-medium"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Class Notes
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </CardFooter>
                 </Card>
               ))}
@@ -432,6 +495,76 @@ export default function ClassesPage() {
           )}
         </TabsContent>
       </Tabs>
+      {/* Session Details Modal */}
+      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Session History - {selectedClass?.title}</DialogTitle>
+            <DialogDescription>
+              View when the class started, ended, and who attended.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 py-4">
+            {loadingSessions ? (
+              <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>
+            ) : classSessions.length > 0 ? (
+              <div className="space-y-4">
+                {classSessions.map((session) => (
+                  <Card key={session._id} className="border border-muted">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {new Date(session.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <Badge variant={session.status === 'completed' ? "secondary" : "default"}>
+                          {session.status === 'completed' ? "Completed" : "Ongoing"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Start Time</span>
+                          <span>{new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> End Time</span>
+                          <span>{session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</span>
+                        </div>
+                      </div>
+                      {(session.participantCount > 0 || isAdmin) && (
+                        <div className="pt-2">
+                          <span className="text-muted-foreground flex items-center gap-1 mb-2"><Users className="h-3 w-3" /> Participants ({session.participantCount})</span>
+                          <div className="flex flex-wrap gap-1">
+                            {session.participants.length > 0 ? (
+                              session.participants.map((name: string, i: number) => (
+                                <Badge key={i} variant="outline" className="text-[10px]">{name}</Badge>
+                              ))
+                            ) : (
+                              <span className="text-xs italic text-muted-foreground">No students logged</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No session history found for this class.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsDetailsModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

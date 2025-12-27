@@ -8,6 +8,12 @@ const norm = (s) =>
     .trim()
     .toLowerCase();
 
+const getDayName = (date) => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const d = new Date(date);
+  return days[d.getDay()];
+};
+
 // @desc    Get all classes for a specific tutor
 // @route   GET /api/classes/tutor
 // @access  Private
@@ -26,7 +32,25 @@ const getTutorClasses = async (req, res) => {
       })
       .sort({ "schedule.day": 1, "schedule.startTime": 1 }); // Optional: sort by day/time
 
-    res.json(classes);
+    // Check for live sessions
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const liveSessions = await ClassSession.find({
+      class: { $in: classes.map(c => c._id) },
+      endTime: null,
+      $or: [
+        { lastHeartbeat: { $gte: twoMinutesAgo } },
+        { startTime: { $gte: twoMinutesAgo } }
+      ]
+    });
+    const liveClassIds = new Set(liveSessions.map(s => String(s.class)));
+
+    const result = classes.map(c => {
+      const obj = c.toObject();
+      obj.isLive = liveClassIds.has(String(c._id));
+      return obj;
+    });
+
+    res.json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -42,32 +66,53 @@ const getAllClasses = async (req, res) => {
       })
       .populate("students");
 
-    res.json(classes);
+    // Check for live sessions
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const liveSessions = await ClassSession.find({
+      class: { $in: classes.map(c => c._id) },
+      endTime: null,
+      $or: [
+        { lastHeartbeat: { $gte: twoMinutesAgo } },
+        { startTime: { $gte: twoMinutesAgo } }
+      ]
+    });
+    const liveClassIds = new Set(liveSessions.map(s => String(s.class)));
+
+    const result = classes.map(c => {
+      const obj = c.toObject();
+      obj.isLive = liveClassIds.has(String(c._id));
+      return obj;
+    });
+
+    res.json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
-module.exports = { getTutorClasses, getAllClasses };
 // @desc    Update schedule for a class (tutor)
 // @route   PUT /api/classes/:classId/schedule
 // @access  Private/Tutor
 const updateClassSchedule = async (req, res) => {
   try {
     const { classId } = req.params;
-    const { day, startTime, endTime, status } = req.body;
+    const { day, date, startTime, endTime, status } = req.body;
     const cls = await Class.findById(classId);
     if (!cls) return res.status(404).json({ message: "Class not found" });
     const tutor = await Tutor.findOne({ user: req.user._id });
     if (!tutor || String(cls.tutor) !== String(tutor._id)) {
       return res.status(403).json({ message: "Not authorized" });
     }
-    if (day && startTime && endTime) {
-      cls.schedule = { day, startTime, endTime };
+    if ((day || date) && startTime && endTime) {
+      const finalDay = date ? getDayName(date) : day;
+      cls.schedule = { day: finalDay, date: date || null, startTime, endTime };
       if (cls.status === "scheduled") cls.status = "rescheduled";
     }
     if (status) cls.status = status;
+    if (req.body.recordingLink !== undefined) cls.recordingLink = req.body.recordingLink;
+    if (req.body.notesLink !== undefined) cls.notesLink = req.body.notesLink;
+
     await cls.save();
     res.json({ message: "Schedule updated", class: cls });
   } catch (error) {
@@ -158,11 +203,11 @@ const startClassSession = async (req, res) => {
     }
     await cls.save();
 
-    // Check for an existing active session for this class
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const existingSession = await ClassSession.findOne({
       class: cls._id,
-      activeParticipants: { $gt: 0 },
-      endTime: null
+      endTime: null,
+      startTime: { $gte: threeHoursAgo }
     });
 
     if (existingSession) {
@@ -174,7 +219,8 @@ const startClassSession = async (req, res) => {
       return res.json({
         message: "Class session already active",
         sessionLink: cls.sessionLink,
-        sessionId: existingSession._id
+        sessionId: existingSession._id,
+        class: cls
       });
     }
 
@@ -187,7 +233,7 @@ const startClassSession = async (req, res) => {
       expectedStudents: cls.students // Snapshot of students assigned at start time
     });
 
-    res.json({ message: "Class started", sessionLink: cls.sessionLink, sessionId: session._id });
+    res.json({ message: "Class started", sessionLink: cls.sessionLink, sessionId: session._id, class: cls });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error" });
@@ -199,10 +245,12 @@ const startClassSession = async (req, res) => {
 // @access  Private/Tutor
 const createClass = async (req, res) => {
   try {
-    const { title, subject, description, day, startTime, endTime, students } = req.body;
+    const { title, subject, description, day, date, startTime, endTime, students } = req.body;
+
+    const finalDay = date ? getDayName(date) : day;
 
     // Basic validation
-    if (!title || !subject || !day || !startTime || !endTime) {
+    if (!title || !subject || !finalDay || !startTime || !endTime) {
       return res.status(400).json({ message: "Please fill in all required fields" });
     }
 
@@ -227,7 +275,8 @@ const createClass = async (req, res) => {
       subject,
       description: description || "",
       schedule: {
-        day,
+        day: finalDay,
+        date: date || null,
         startTime,
         endTime
       },
@@ -279,6 +328,11 @@ const logSessionEvent = async (req, res) => {
       session.activeParticipants = (session.activeParticipants || 0) + 1;
     } else if (action === 'leave') {
       session.activeParticipants = Math.max(0, (session.activeParticipants || 0) - 1);
+
+      // If tutor leaves, mark the session as ended
+      if (req.user.role === 'tutor') {
+        session.endTime = new Date();
+      }
     }
 
     await session.save();
@@ -289,12 +343,72 @@ const logSessionEvent = async (req, res) => {
   }
 };
 
+// @desc    Update session heartbeat
+// @route   POST /api/classes/session/:sessionId/heartbeat
+// @access  Private
+const sendHeartbeat = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    await ClassSession.findByIdAndUpdate(sessionId, { lastHeartbeat: new Date() });
+    res.json({ message: "Heartbeat received" });
+  } catch (error) {
+    res.status(500).json({ message: "Heartbeat failed" });
+  }
+};
+
+// @desc    Get session history for a specific class
+// @route   GET /api/classes/:classId/sessions
+// @access  Private (Owner or Admin)
+const getClassSessions = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const sessions = await ClassSession.find({ class: classId })
+      .populate('logs.user', 'name role')
+      .sort('-startTime');
+
+    // Process sessions to extract attendee list
+    const enrichedSessions = sessions.map(s => {
+      const logs = (s.logs || []);
+      const participants = Array.from(new Set(logs.map(l => l.user?.name || 'Unknown')))
+        .filter(name => name !== 'Unknown' && name !== (s.tutor?.user?.name));
+
+      // Separate tutor logs to find tutor start/end
+      const tutorLogs = logs.filter(l => l.role === 'tutor');
+      const actualStartTime = tutorLogs.find(l => l.action === 'join')?.timestamp || s.startTime;
+      const actualEndTime = s.endTime || tutorLogs.filter(l => l.action === 'leave').pop()?.timestamp;
+
+      return {
+        _id: s._id,
+        startTime: actualStartTime,
+        endTime: actualEndTime,
+        participants,
+        participantCount: participants.length,
+        status: actualEndTime ? 'completed' : 'ongoing'
+      };
+    });
+
+    res.json(enrichedSessions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
+
 // @desc    Get live sessions (active > 0)
 // @route   GET /api/classes/sessions/live
 // @access  Private/Admin
 const getLiveSessions = async (req, res) => {
   try {
-    const sessions = await ClassSession.find({ activeParticipants: { $gt: 0 }, endTime: null })
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const sessions = await ClassSession.find({
+      endTime: null,
+      $or: [
+        { lastHeartbeat: { $gte: twoMinutesAgo } },
+        { startTime: { $gte: twoMinutesAgo } }
+      ]
+    })
       .populate({ path: 'class', select: 'title subject' })
       .populate({ path: 'tutor', populate: { path: 'user', select: 'name' } })
       .sort('-startTime');
@@ -344,7 +458,8 @@ const joinClassSession = async (req, res) => {
     res.json({
       message: "Joined class info",
       sessionLink: cls.sessionLink,
-      sessionId: recentSession ? recentSession._id : null
+      sessionId: recentSession ? recentSession._id : null,
+      class: cls
     });
 
   } catch (error) {
@@ -353,4 +468,15 @@ const joinClassSession = async (req, res) => {
   }
 };
 
-module.exports = { getTutorClasses, getAllClasses, updateClassSchedule, startClassSession, createClass, logSessionEvent, getLiveSessions, joinClassSession };
+module.exports = {
+  getTutorClasses,
+  getAllClasses,
+  updateClassSchedule,
+  startClassSession,
+  createClass,
+  logSessionEvent,
+  sendHeartbeat,
+  getLiveSessions,
+  joinClassSession,
+  getClassSessions
+};

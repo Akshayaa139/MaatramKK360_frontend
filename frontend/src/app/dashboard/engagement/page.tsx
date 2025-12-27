@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,143 +9,108 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, ThumbsUp, Send, Calendar, Clock, Users, BookOpen, Star } from "lucide-react";
-
-// Mock data for discussions
-const discussionsData = [
-  {
-    id: 1,
-    title: "Understanding Quadratic Equations",
-    subject: "Mathematics",
-    author: "Alex Johnson",
-    date: "2023-06-10",
-    replies: 8,
-    likes: 12,
-    content: "I'm having trouble understanding how to factor quadratic equations. Can someone explain the process step by step?",
-    tags: ["algebra", "equations", "help"],
-  },
-  {
-    id: 2,
-    title: "Shakespeare's Macbeth Themes",
-    subject: "English",
-    author: "Emma Wilson",
-    date: "2023-06-11",
-    replies: 5,
-    likes: 7,
-    content: "What are the main themes in Shakespeare's Macbeth? I need to write an essay and would appreciate some insights.",
-    tags: ["literature", "shakespeare", "themes"],
-  },
-  {
-    id: 3,
-    title: "Newton's Laws of Motion Applications",
-    subject: "Physics",
-    author: "James Miller",
-    date: "2023-06-12",
-    replies: 10,
-    likes: 15,
-    content: "Can anyone share some real-world applications of Newton's laws of motion? I'm working on a project and need examples.",
-    tags: ["mechanics", "newton", "physics"],
-  },
-];
-
-// Mock data for feedback
-const feedbackData = [
-  {
-    id: 1,
-    tutor: "Dr. John Smith",
-    subject: "Mathematics",
-    date: "2023-06-08",
-    rating: 5,
-    comment: "Excellent explanation of calculus concepts. Dr. Smith took the time to ensure I understood each step before moving on.",
-    response: "Thank you for your kind words! I'm glad I could help you understand calculus better.",
-  },
-  {
-    id: 2,
-    tutor: "Sarah Johnson",
-    subject: "Chemistry",
-    date: "2023-06-05",
-    rating: 4,
-    comment: "Very knowledgeable about organic chemistry. Could improve by providing more practice problems.",
-    response: null,
-  },
-];
-
-// Mock data for resources
-const resourcesData = [
-  {
-    id: 1,
-    title: "Calculus Fundamentals",
-    subject: "Mathematics",
-    type: "PDF",
-    author: "Dr. John Smith",
-    downloads: 156,
-    rating: 4.8,
-    link: "https://example.com/resources/calculus-fundamentals.pdf",
-  },
-  {
-    id: 2,
-    title: "Chemistry Lab Safety Guidelines",
-    subject: "Chemistry",
-    type: "Video",
-    author: "Sarah Johnson",
-    downloads: 98,
-    rating: 4.5,
-    link: "https://example.com/resources/chemistry-lab-safety.mp4",
-  },
-  {
-    id: 3,
-    title: "English Literature Essay Writing Guide",
-    subject: "English",
-    type: "PDF",
-    author: "Michael Brown",
-    downloads: 210,
-    rating: 4.9,
-    link: "https://example.com/resources/essay-writing-guide.pdf",
-  },
-  {
-    id: 4,
-    title: "Physics Problem Solving Techniques",
-    subject: "Physics",
-    type: "Interactive",
-    author: "Robert Wilson",
-    downloads: 175,
-    rating: 4.7,
-    link: "https://example.com/resources/physics-problem-solving.html",
-  },
-];
+import api, { BACKEND_URL } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function EngagementPage() {
   const { data: session } = useSession();
   const [newDiscussion, setNewDiscussion] = useState({ title: "", content: "", subject: "", tags: "" });
   const [newFeedback, setNewFeedback] = useState({ tutor: "", subject: "", rating: 5, comment: "" });
-  const [likedDiscussions, setLikedDiscussions] = useState<number[]>([]);
-  const [downloadedResources, setDownloadedResources] = useState<number[]>([]);
+  const [discussions, setDiscussions] = useState<any[]>([]);
+  const [feedback, setFeedback] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLikeDiscussion = (discussionId: number) => {
-    if (!likedDiscussions.includes(discussionId)) {
-      setLikedDiscussions([...likedDiscussions, discussionId]);
-    } else {
-      setLikedDiscussions(likedDiscussions.filter(id => id !== discussionId));
+  useEffect(() => {
+    fetchDiscussions();
+    fetchFeedback();
+    fetchResources();
+  }, []);
+
+  const fetchDiscussions = async () => {
+    try {
+      const res = await api.get("/engagement/discussions");
+      setDiscussions(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch discussions", err);
+    }
+  };
+
+  const fetchFeedback = async () => {
+    try {
+      const res = await api.get("/engagement/feedback");
+      setFeedback(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch feedback", err);
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const res = await api.get("/study-materials");
+      // Add detailed steps and summaries to backend results
+      const enrichedResources = (res.data || []).map((m: any) => ({
+        ...m,
+        id: m._id,
+        details: m.summary || m.description || "Comprehensive guide covering the essentials. Perfect for conceptual understanding.",
+        steps: (m.steps && m.steps.length > 0) ? m.steps : [
+          "Review core concepts in this guide",
+          "Solve the practice problems included",
+          "Discuss with peers in the forum",
+          "Contact your tutor for deep dives"
+        ]
+      }));
+      setResources(enrichedResources);
+    } catch (err) {
+      console.error("Failed to fetch resources", err);
+    }
+  };
+
+  const handleLikeDiscussion = async (discussionId: string) => {
+    try {
+      await api.post(`/engagement/discussions/${discussionId}/like`);
+      fetchDiscussions();
+    } catch (err) {
+      toast.error("Failed to like discussion");
     }
   };
 
   const handleDownloadResource = (resourceId: number) => {
-    if (!downloadedResources.includes(resourceId)) {
-      setDownloadedResources([...downloadedResources, resourceId]);
+    // Analytics or counter update
+    toast.info("Downloading resource...");
+  };
+
+  const handleSubmitDiscussion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      await api.post("/engagement/discussions", {
+        ...newDiscussion,
+        tags: newDiscussion.tags.split(",").map(t => t.trim())
+      });
+      toast.success("Discussion posted successfully!");
+      setNewDiscussion({ title: "", content: "", subject: "", tags: "" });
+      fetchDiscussions();
+    } catch (err) {
+      toast.error("Failed to post discussion");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSubmitDiscussion = (e: React.FormEvent) => {
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would send the new discussion to the backend
-    alert("Discussion submitted successfully!");
-    setNewDiscussion({ title: "", content: "", subject: "", tags: "" });
-  };
-
-  const handleSubmitFeedback = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, this would send the feedback to the backend
-    alert("Feedback submitted successfully!");
-    setNewFeedback({ tutor: "", subject: "", rating: 5, comment: "" });
+    try {
+      setIsLoading(true);
+      await api.post("/engagement/feedback", newFeedback);
+      toast.success("Feedback submitted successfully!");
+      setNewFeedback({ tutor: "", subject: "", rating: 5, comment: "" });
+      fetchFeedback();
+    } catch (err) {
+      toast.error("Failed to submit feedback");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -156,7 +121,7 @@ export default function EngagementPage() {
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
         </TabsList>
-        
+
         {/* Discussions Tab */}
         <TabsContent value="discussions" className="space-y-4 mt-4">
           <Card>
@@ -169,20 +134,20 @@ export default function EngagementPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="title" className="text-sm font-medium">Title</label>
-                    <Input 
-                      id="title" 
-                      value={newDiscussion.title} 
-                      onChange={(e) => setNewDiscussion({...newDiscussion, title: e.target.value})}
+                    <Input
+                      id="title"
+                      value={newDiscussion.title}
+                      onChange={(e) => setNewDiscussion({ ...newDiscussion, title: e.target.value })}
                       placeholder="Enter a clear, specific title"
                       required
                     />
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="subject" className="text-sm font-medium">Subject</label>
-                    <Input 
-                      id="subject" 
-                      value={newDiscussion.subject} 
-                      onChange={(e) => setNewDiscussion({...newDiscussion, subject: e.target.value})}
+                    <Input
+                      id="subject"
+                      value={newDiscussion.subject}
+                      onChange={(e) => setNewDiscussion({ ...newDiscussion, subject: e.target.value })}
                       placeholder="e.g., Mathematics, Physics, English"
                       required
                     />
@@ -190,10 +155,10 @@ export default function EngagementPage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="content" className="text-sm font-medium">Content</label>
-                  <Textarea 
-                    id="content" 
-                    value={newDiscussion.content} 
-                    onChange={(e) => setNewDiscussion({...newDiscussion, content: e.target.value})}
+                  <Textarea
+                    id="content"
+                    value={newDiscussion.content}
+                    onChange={(e) => setNewDiscussion({ ...newDiscussion, content: e.target.value })}
                     placeholder="Describe your question or topic in detail"
                     rows={5}
                     required
@@ -201,28 +166,30 @@ export default function EngagementPage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="tags" className="text-sm font-medium">Tags (comma separated)</label>
-                  <Input 
-                    id="tags" 
-                    value={newDiscussion.tags} 
-                    onChange={(e) => setNewDiscussion({...newDiscussion, tags: e.target.value})}
+                  <Input
+                    id="tags"
+                    value={newDiscussion.tags}
+                    onChange={(e) => setNewDiscussion({ ...newDiscussion, tags: e.target.value })}
                     placeholder="e.g., algebra, equations, help"
                   />
                 </div>
-                <Button type="submit" className="w-full">Post Discussion</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Posting..." : "Post Discussion"}
+                </Button>
               </form>
             </CardContent>
           </Card>
-          
+
           <h3 className="text-lg font-semibold mt-6">Recent Discussions</h3>
           <div className="space-y-4">
-            {discussionsData.map((discussion) => (
-              <Card key={discussion.id}>
+            {discussions.map((discussion: any) => (
+              <Card key={discussion._id || discussion.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle>{discussion.title}</CardTitle>
                       <CardDescription>
-                        Posted by {discussion.author} on {discussion.date} • Subject: {discussion.subject}
+                        Posted by {discussion.author?.name || "Unknown"} on {discussion.createdAt ? new Date(discussion.createdAt).toLocaleDateString() : "Unknown"} • Subject: {discussion.subject}
                       </CardDescription>
                     </div>
                     <Badge variant="outline">{discussion.subject}</Badge>
@@ -231,7 +198,7 @@ export default function EngagementPage() {
                 <CardContent>
                   <p className="text-sm">{discussion.content}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {discussion.tags.map((tag) => (
+                    {discussion.tags?.map((tag: string) => (
                       <Badge key={tag} variant="secondary" className="text-xs">
                         #{tag}
                       </Badge>
@@ -240,29 +207,26 @@ export default function EngagementPage() {
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <div className="flex items-center gap-4">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="flex items-center gap-1"
-                      onClick={() => handleLikeDiscussion(discussion.id)}
+                      onClick={() => handleLikeDiscussion(discussion._id || discussion.id)}
                     >
-                      <ThumbsUp className={`h-4 w-4 ${likedDiscussions.includes(discussion.id) ? "fill-primary text-primary" : ""}`} />
-                      <span>{likedDiscussions.includes(discussion.id) ? discussion.likes + 1 : discussion.likes}</span>
+                      <ThumbsUp className="h-4 w-4" />
+                      <span>{discussion.likes?.length || 0}</span>
                     </Button>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <MessageSquare className="h-4 w-4" />
-                      <span>{discussion.replies} replies</span>
+                      <span>{discussion.replies?.length || 0} replies</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    View Discussion
-                  </Button>
                 </CardFooter>
               </Card>
             ))}
           </div>
         </TabsContent>
-        
+
         {/* Feedback Tab */}
         <TabsContent value="feedback" className="space-y-4 mt-4">
           <Card>
@@ -275,20 +239,20 @@ export default function EngagementPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="tutor" className="text-sm font-medium">Tutor Name</label>
-                    <Input 
-                      id="tutor" 
-                      value={newFeedback.tutor} 
-                      onChange={(e) => setNewFeedback({...newFeedback, tutor: e.target.value})}
+                    <Input
+                      id="tutor"
+                      value={newFeedback.tutor}
+                      onChange={(e) => setNewFeedback({ ...newFeedback, tutor: e.target.value })}
                       placeholder="Enter tutor's name"
                       required
                     />
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="subject" className="text-sm font-medium">Subject</label>
-                    <Input 
-                      id="subject" 
-                      value={newFeedback.subject} 
-                      onChange={(e) => setNewFeedback({...newFeedback, subject: e.target.value})}
+                    <Input
+                      id="subject"
+                      value={newFeedback.subject}
+                      onChange={(e) => setNewFeedback({ ...newFeedback, subject: e.target.value })}
                       placeholder="e.g., Mathematics, Physics, English"
                       required
                     />
@@ -304,7 +268,7 @@ export default function EngagementPage() {
                         variant="ghost"
                         size="sm"
                         className={`p-1 ${newFeedback.rating >= rating ? "text-amber-500" : "text-gray-300"}`}
-                        onClick={() => setNewFeedback({...newFeedback, rating})}
+                        onClick={() => setNewFeedback({ ...newFeedback, rating })}
                       >
                         <Star className={`h-6 w-6 ${newFeedback.rating >= rating ? "fill-amber-500" : ""}`} />
                       </Button>
@@ -313,37 +277,39 @@ export default function EngagementPage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="comment" className="text-sm font-medium">Comments</label>
-                  <Textarea 
-                    id="comment" 
-                    value={newFeedback.comment} 
-                    onChange={(e) => setNewFeedback({...newFeedback, comment: e.target.value})}
+                  <Textarea
+                    id="comment"
+                    value={newFeedback.comment}
+                    onChange={(e) => setNewFeedback({ ...newFeedback, comment: e.target.value })}
                     placeholder="Share your experience with this tutor"
                     rows={4}
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">Submit Feedback</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Submitting..." : "Submit Feedback"}
+                </Button>
               </form>
             </CardContent>
           </Card>
-          
+
           <h3 className="text-lg font-semibold mt-6">Your Recent Feedback</h3>
           <div className="space-y-4">
-            {feedbackData.map((feedback) => (
-              <Card key={feedback.id}>
+            {feedback.map((f) => (
+              <Card key={f._id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle>{feedback.tutor}</CardTitle>
+                      <CardTitle>{f.tutor?.name || f.tutor}</CardTitle>
                       <CardDescription>
-                        Subject: {feedback.subject} • Submitted on {feedback.date}
+                        Subject: {f.subject} • Submitted on {new Date(f.createdAt).toLocaleDateString()}
                       </CardDescription>
                     </div>
                     <div className="flex items-center">
                       {[1, 2, 3, 4, 5].map((rating) => (
-                        <Star 
-                          key={rating} 
-                          className={`h-4 w-4 ${rating <= feedback.rating ? "fill-amber-500 text-amber-500" : "text-gray-300"}`} 
+                        <Star
+                          key={rating}
+                          className={`h-4 w-4 ${rating <= f.rating ? "fill-amber-500 text-amber-500" : "text-gray-300"}`}
                         />
                       ))}
                     </div>
@@ -352,13 +318,13 @@ export default function EngagementPage() {
                 <CardContent className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium mb-1">Your Comment</h4>
-                    <p className="text-sm">{feedback.comment}</p>
+                    <p className="text-sm">{f.comment}</p>
                   </div>
-                  
-                  {feedback.response && (
+
+                  {f.response && (
                     <div className="bg-gray-50 p-3 rounded-md">
                       <h4 className="text-sm font-medium mb-1">Tutor Response</h4>
-                      <p className="text-sm">{feedback.response}</p>
+                      <p className="text-sm">{f.response}</p>
                     </div>
                   )}
                 </CardContent>
@@ -366,50 +332,59 @@ export default function EngagementPage() {
             ))}
           </div>
         </TabsContent>
-        
+
         {/* Resources Tab */}
         <TabsContent value="resources" className="space-y-4 mt-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {resourcesData.map((resource) => (
-              <Card key={resource.id} className="overflow-hidden">
-                <CardHeader className="pb-2">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            {resources.map((resource) => (
+              <Card key={resource.id} className="flex flex-col overflow-hidden border-2 border-slate-100 hover:border-maatram-yellow transition-all">
+                <CardHeader className="pb-2 bg-slate-50">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{resource.title}</CardTitle>
+                    <CardTitle className="text-xl text-slate-900">{resource.title}</CardTitle>
                     <Badge variant={
-                      resource.type === "PDF" ? "default" : 
-                      resource.type === "Video" ? "destructive" : 
-                      "secondary"
+                      resource.type?.toLowerCase() === "pdf" ? "default" :
+                        resource.type?.toLowerCase() === "video" ? "destructive" :
+                          "secondary"
                     }>
-                      {resource.type}
+                      {resource.type?.toUpperCase()}
                     </Badge>
                   </div>
-                  <CardDescription>{resource.subject}</CardDescription>
+                  <CardDescription className="font-bold text-maatram-blue uppercase tracking-wider">{resource.subjects?.join(", ") || resource.subject}</CardDescription>
                 </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>Author: {resource.author}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 mr-2 text-amber-500" />
-                      <span>Rating: {resource.rating}/5.0</span>
-                    </div>
-                    <div className="flex items-center">
-                      <BookOpen className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>Downloads: {downloadedResources.includes(resource.id) ? resource.downloads + 1 : resource.downloads}</span>
-                    </div>
+                <CardContent className="flex-grow py-4 space-y-4">
+                  <div className="bg-white p-3 rounded border border-slate-200 shadow-sm">
+                    <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-maatram-blue" />
+                      Executive Summary
+                    </h4>
+                    <p className="text-sm text-slate-600 italic">
+                      {resource.details}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-maatram-yellow" />
+                      Learning Roadmap
+                    </h4>
+                    <ul className="space-y-2">
+                      {(resource.steps || []).map((step: string, idx: number) => (
+                        <li key={idx} className="text-xs flex gap-2">
+                          <span className="font-bold text-maatram-yellow">{idx + 1}.</span>
+                          <span className="text-slate-600">{step}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button 
-                    className="w-full" 
-                    variant={downloadedResources.includes(resource.id) ? "secondary" : "default"}
+                <CardFooter className="pt-2 bg-slate-50 border-t">
+                  <Button
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold"
                     onClick={() => handleDownloadResource(resource.id)}
                     asChild
                   >
-                    <a href={resource.link} target="_blank" rel="noopener noreferrer">
-                      {downloadedResources.includes(resource.id) ? "Downloaded" : "Download Resource"}
+                    <a href={resource.url || (resource.filePath ? `${BACKEND_URL}/uploads/study-materials/${resource.filePath}` : resource.link)} target="_blank" rel="noopener noreferrer">
+                      Download Study Material
                     </a>
                   </Button>
                 </CardFooter>

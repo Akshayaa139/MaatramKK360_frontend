@@ -457,50 +457,89 @@ router.post("/automap", protect, authorize("tutor"), async (req, res) => {
 });
 
 // GET /api/tutor/progress - comprehensive student progress list
-router.get("/progress", protect, authorize("tutor"), async (req, res) => {
+router.get("/progress", protect, authorize("tutor", "admin", "lead"), async (req, res) => {
   try {
-    const tutor = await getTutorForUser(req.user._id);
-    if (!tutor) return res.json([]);
+    let tutor = null;
 
-    // 1. Get all classes for this tutor
-    const classes = await Class.find({ tutor: tutor._id }).select("title subject");
-    const classIds = classes.map((c) => c._id);
+    // If admin/lead, they can see everything or we might need to filter.
+    // For now, if admin/lead, we might want to return ALL students or just return properly.
+    // However, the current logic relies on "classes found for this tutor". 
+    // If admin is viewing, maybe they want to see ALL students?
+    // Let's first check if the user is a tutor.
+    if (req.user.role === 'tutor') {
+      tutor = await getTutorForUser(req.user._id);
+      if (!tutor) return res.json([]);
+    } else {
+      // Admin/Lead: Return progress for all students or handle differently.
+      // For simplicity in this fix, we will allow them to fetch ALL students progress
+      // OR we can fetch all classes if no tutor filter is applied.
 
-    // 2. Find all students in these classes
-    const classDocs = await Class.find({ tutor: tutor._id }).populate({
-      path: "students",
-      populate: { path: "user", select: "name email" },
-    });
-
-    // Unique students map
-    const studentMap = new Map();
-    for (const c of classDocs) {
-      for (const s of c.students || []) {
-        if (!studentMap.has(String(s._id))) {
-          studentMap.set(String(s._id), {
-            doc: s,
-            classes: [c.title],
-            classId: c._id // keep one for reference
-          });
-        } else {
-          studentMap.get(String(s._id)).classes.push(c.title);
-        }
-      }
+      // Strategy: Fetch all students directly for Admin/Lead
+      console.log(`[DEBUG] Admin/Lead accessing progress: ${req.user.role}`);
     }
 
-    // 3. Fetch all Assignments & Tests for these classes
-    const assignments = await require("../models/Assignment").find({ class: { $in: classIds } });
-    const tests = await require("../models/Test").find({ class: { $in: classIds } });
+    // Logic split:
+    // If Tutor: Filter by Tutor's classes
+    // If Admin/Lead: Fetch ALL students
+
+    let studentDocs = [];
+
+    if (tutor) {
+      // 1. Get all classes for this tutor
+      const classes = await Class.find({ tutor: tutor._id }).select("title subject");
+      const classIds = classes.map((c) => c._id);
+
+      // 2. Find all students in these classes
+      const classDocs = await Class.find({ tutor: tutor._id }).populate({
+        path: "students",
+        populate: { path: "user", select: "name email" },
+      });
+
+      // Unique students map
+      const studentMap = new Map();
+      for (const c of classDocs) {
+        for (const s of c.students || []) {
+          if (!studentMap.has(String(s._id))) {
+            studentMap.set(String(s._id), {
+              doc: s,
+              classes: [c.title],
+              classId: c._id
+            });
+          } else {
+            studentMap.get(String(s._id)).classes.push(c.title);
+          }
+        }
+      }
+
+      // Convert map values to array for processing
+      studentDocs = Array.from(studentMap.values());
+    } else {
+      // Admin/Lead - Fetch all students with basic population
+      // This might be heavy but "progress is lagging" anyway, we need to optimize later.
+      // For now, fix the 403.
+      const allStudents = await Student.find({}).populate('user', 'name email');
+      studentDocs = allStudents.map(s => ({
+        doc: s,
+        classes: ["General"], // Admins see all
+        classId: null
+      }));
+    }
 
     const { calculateStudentProgress } = require("../services/studentAnalyticsService");
     const results = [];
-    for (const [sid, data] of studentMap.entries()) {
+
+    // Process students
+    for (const data of studentDocs) {
+      const s = data.doc;
+      if (!s) continue;
+
+      const sid = String(s._id);
       const analytics = await calculateStudentProgress(sid);
       if (analytics) {
         results.push({
           id: sid,
           name: analytics.name,
-          class: data.classes[0] || "General",
+          class: data.classes ? data.classes[0] : "General",
           attendance: Math.round(analytics.attendanceRate),
           assignments: {
             completed: analytics.assignmentCompleted,
@@ -526,7 +565,7 @@ router.get("/progress", protect, authorize("tutor"), async (req, res) => {
 });
 
 // GET /api/tutor/progress/:id - detailed student history
-router.get("/progress/:id", protect, authorize("tutor"), async (req, res) => {
+router.get("/progress/:id", protect, authorize("tutor", "admin", "lead"), async (req, res) => {
   try {
     const studentId = req.params.id;
     const student = await Student.findById(studentId).populate('user', 'name email');
@@ -597,7 +636,23 @@ router.post("/student/:id/note", protect, authorize("tutor"), async (req, res) =
   }
 });
 
-// POST /api/tutor/student/:id/message - Send message to student
+// GET /api/tutor/classes - list classes assigned to tutor
+router.get("/classes", protect, authorize("tutor"), async (req, res) => {
+  try {
+    const tutor = await getTutorForUser(req.user._id);
+    if (!tutor) return res.json([]);
+    const classes = await Class.find({ tutor: tutor._id });
+    res.json(classes.map(c => ({
+      _id: c._id,
+      name: c.title || c.subject || "Unnamed Class",
+      subject: c.subject
+    })));
+  } catch (e) {
+    console.error("Tutor classes fetch failed:", e);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
 router.post("/student/:id/message", protect, authorize("tutor"), async (req, res) => {
   try {
     const { message } = req.body;

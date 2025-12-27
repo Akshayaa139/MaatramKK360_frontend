@@ -21,8 +21,10 @@ export default function MeetingPage({ params }: Props) {
     const [loading, setLoading] = useState(true);
     const jitsiRef = useRef<any>(null);
     const [jitsiApi, setJitsiApi] = useState<any>(null);
+    const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
     // Persist real sessionId (from DB log) across renders
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+    const [classDetails, setClassDetails] = useState<any>(null);
 
     useEffect(() => {
         // Load Jitsi script
@@ -70,6 +72,7 @@ export default function MeetingPage({ params }: Props) {
             const link = res.data.sessionLink;
             const dbSessionId = res.data.sessionId; // Now returned by backend
             setActiveSessionId(dbSessionId);
+            setClassDetails(res.data.class); // Assuming backend returns class info
 
             const roomName = link.split("/").pop();
 
@@ -99,14 +102,44 @@ export default function MeetingPage({ params }: Props) {
             setJitsiApi(apiInstance);
             setLoading(false);
 
+            // Set up heartbeat
+            heartbeatRef.current = setInterval(async () => {
+                if (dbSessionId) {
+                    try {
+                        await api.post(`/classes/session/${dbSessionId}/heartbeat`, {});
+                    } catch (e) {
+                        console.error("Heartbeat failed", e);
+                    }
+                }
+            }, 30000); // Every 30 seconds
+
             apiInstance.addEventListeners({
-                videoConferenceLeft: () => handleLeft(dbSessionId),
+                videoConferenceLeft: () => {
+                    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+                    handleLeft(dbSessionId);
+                },
+            });
+
+            // Handle tab close / refresh
+            window.addEventListener('beforeunload', () => {
+                if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+                handleLeft(dbSessionId || activeSessionId);
             });
 
         } catch (error) {
             console.error("Failed to init meeting", error);
         }
     };
+
+    useEffect(() => {
+        return () => {
+            if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+            if (activeSessionId) {
+                handleLeft(activeSessionId);
+            }
+        };
+    }, [activeSessionId]);
+
 
     const handleLeft = async (dbSessionId: string | null) => {
         // Log leave only, do NOT redirect automatically.
@@ -129,12 +162,32 @@ export default function MeetingPage({ params }: Props) {
     return (
         <div className="h-[calc(100vh-100px)] w-full flex flex-col relative">
             {/* Header/Controls Overlay */}
-            <div className="bg-background border-b p-2 flex justify-between items-center">
-                <h3 className="font-semibold px-2">Live Class</h3>
-                <Button variant="destructive" size="sm" onClick={handleManualExit}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Exit Class
-                </Button>
+            <div className="bg-background border-b p-2 flex justify-between items-center shadow-sm">
+                <div className="flex flex-col px-4">
+                    <h3 className="font-bold text-lg leading-tight">
+                        {classDetails?.title || "Live Class"}
+                    </h3>
+                    {classDetails?.schedule && (
+                        <p className="text-xs text-muted-foreground">
+                            {classDetails.schedule.day} • {classDetails.schedule.startTime} - {classDetails.schedule.endTime}
+                        </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-4 px-4">
+                    {loading ? (
+                        <span className="text-xs flex items-center gap-1 text-yellow-600">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Connecting...
+                        </span>
+                    ) : (
+                        <span className="text-xs flex items-center gap-1 text-green-600 font-medium">
+                            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span> Connected
+                        </span>
+                    )}
+                    <Button variant="destructive" size="sm" onClick={handleManualExit} className="hover:bg-red-600 transition-colors">
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Exit Class
+                    </Button>
+                </div>
             </div>
 
             {loading && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}

@@ -6,11 +6,12 @@ const {
   getMyPerformance,
   getMyProgress,
   getStudentNotifications,
+  getTutors,
 } = require("../controllers/studentController");
 const {
   getAssignmentsForStudent,
 } = require("../controllers/assignmentController");
-const { getTestsForStudent } = require("../controllers/testController");
+const { getTestsForStudent, submitQuiz } = require("../controllers/testController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
 router.get("/profile", protect, authorize("student"), getStudentProfile);
@@ -30,5 +31,8 @@ router.get(
   authorize("student"),
   getTestsForStudent
 );
+router.post("/tests/:testId/submit", protect, authorize("student"), submitQuiz);
+
+router.get("/tutors", protect, authorize("student"), getTutors);
 
 module.exports = router;

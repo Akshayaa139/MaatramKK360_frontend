@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 import {
   Search,
   Download,
@@ -30,12 +31,13 @@ import {
   Users,
   BookOpen,
   TrendingUp,
-  Clock, // Added
-  CalendarDays, // Added
-  FileText // Added
+  Clock,
+  CalendarDays,
+  FileText,
+  Video,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // Added
-import { ScrollArea } from "@/components/ui/scroll-area"; // Added
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import AutoMapButton from "@/components/admin/AutoMapButton";
@@ -346,8 +348,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-10">
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -375,9 +377,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <Card className="bg-blue-50 border-blue-200 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-blue-800">
                 Total Applications
               </CardTitle>
@@ -391,8 +393,8 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-yellow-50 border-yellow-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="bg-yellow-50 border-yellow-200 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-yellow-800">
                 Under Review
               </CardTitle>
@@ -406,8 +408,8 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-purple-50 border-purple-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="bg-purple-50 border-purple-200 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-purple-800">
                 Tele-verification
               </CardTitle>
@@ -423,8 +425,8 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-green-50 border-green-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="bg-green-50 border-green-200 overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-green-800">
                 Selected
               </CardTitle>
@@ -457,7 +459,7 @@ export default function AdminDashboard() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {/* Deduplicate sessions by class ID just in case */}
                 {Array.from(new Map(liveSessions.map(s => [s.class?._id || s._id, s])).values()).map((ls) => (
-                  <div key={ls._id} className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-l-red-500 border-t border-r border-b border-gray-100 flex flex-col gap-2">
+                  <div key={ls._id} className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-red-500 border-t border-r border-b border-gray-100 flex flex-col gap-4">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-bold text-gray-900">{ls.class?.title || "Class"}</div>
@@ -477,6 +479,12 @@ export default function AdminDashboard() {
                         <span>Started {new Date(ls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
+                    <Button className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white border-none text-xs h-8" asChild>
+                      <Link href={`/dashboard/meeting/${ls.class?._id || ls.class}`}>
+                        <Video className="h-3 w-3 mr-1" />
+                        Join Session
+                      </Link>
+                    </Button>
                   </div>
                 ))}
               </div>

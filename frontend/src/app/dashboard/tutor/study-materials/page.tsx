@@ -2,7 +2,7 @@
 
 import { useEffect, useState, FormEvent, ChangeEvent } from "react";
 import type { AxiosProgressEvent } from "axios";
-import api from "@/lib/api";
+import api, { BACKEND_URL } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ export default function TutorStudyMaterialUpload() {
   const [description, setDescription] = useState("");
   const [subjects, setSubjects] = useState("");
   const [url, setUrl] = useState("");
+  const [summary, setSummary] = useState("");
+  const [steps, setSteps] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -35,6 +37,8 @@ export default function TutorStudyMaterialUpload() {
   const [editDescription, setEditDescription] = useState("");
   const [editSubjects, setEditSubjects] = useState("");
   const [editUrl, setEditUrl] = useState("");
+  const [editSummary, setEditSummary] = useState("");
+  const [editSteps, setEditSteps] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -70,6 +74,8 @@ export default function TutorStudyMaterialUpload() {
         fd.append("title", title);
         fd.append("description", description);
         fd.append("subjects", subjects);
+        fd.append("summary", summary);
+        fd.append("steps", steps);
         setUploadProgress(0);
         await api.post("/tutor/study-materials/upload", fd, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -89,6 +95,8 @@ export default function TutorStudyMaterialUpload() {
           title,
           description,
           url,
+          summary,
+          steps: steps ? steps.split(",").map((s) => s.trim()) : [],
           subjects: subjects ? subjects.split(",").map((s) => s.trim()) : [],
         });
       }
@@ -105,6 +113,8 @@ export default function TutorStudyMaterialUpload() {
       setDescription("");
       setSubjects("");
       setUrl("");
+      setSummary("");
+      setSteps("");
       setFile(null);
       setUploadProgress(null);
     } catch (error) {
@@ -156,6 +166,8 @@ export default function TutorStudyMaterialUpload() {
     setEditDescription(m.description || "");
     setEditSubjects((m.subjects || []).join(","));
     setEditUrl(m.url || "");
+    setEditSummary((m as any).summary || "");
+    setEditSteps(((m as any).steps || []).join(","));
   };
 
   const onCancelEdit = () => {
@@ -171,6 +183,8 @@ export default function TutorStudyMaterialUpload() {
           ? editSubjects.split(",").map((s) => s.trim())
           : [],
         url: editUrl,
+        summary: editSummary,
+        steps: editSteps ? editSteps.split(",").map((s) => s.trim()) : [],
       } as const;
       const res = await api.put(`/tutor/study-materials/${id}`, payload);
       const updated = res.data?.material;
@@ -235,12 +249,23 @@ export default function TutorStudyMaterialUpload() {
               />
             </div>
             <div>
-              <Label>URL (optional)</Label>
+              <Label>Executive Summary</Label>
               <Input
-                value={url}
+                value={summary}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setUrl(e.target.value)
+                  setSummary(e.target.value)
                 }
+                placeholder="Key takeaways for students..."
+              />
+            </div>
+            <div>
+              <Label>Learning Roadmap (comma-separated steps)</Label>
+              <Input
+                value={steps}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setSteps(e.target.value)
+                }
+                placeholder="Step 1, Step 2, Step 3..."
               />
             </div>
             <div>
@@ -278,14 +303,14 @@ export default function TutorStudyMaterialUpload() {
                     // image preview
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={`/uploads/study-materials/${m.filePath}`}
+                      src={`${BACKEND_URL}/uploads/study-materials/${m.filePath}`}
                       alt={m.title}
                       className="w-full max-h-40 object-cover mb-2 rounded"
                     />
                   )}
                   {m.type === "video" && m.filePath && (
                     <video controls className="w-full max-h-40 mb-2 rounded">
-                      <source src={`/uploads/study-materials/${m.filePath}`} />
+                      <source src={`${BACKEND_URL}/uploads/study-materials/${m.filePath}`} />
                       Your browser does not support the video tag.
                     </video>
                   )}
@@ -294,7 +319,7 @@ export default function TutorStudyMaterialUpload() {
                       PDF:{" "}
                       <a
                         className="text-blue-600 underline"
-                        href={`/uploads/study-materials/${m.filePath}`}
+                        href={`${BACKEND_URL}/uploads/study-materials/${m.filePath}`}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -321,7 +346,7 @@ export default function TutorStudyMaterialUpload() {
                     {m.filePath && (
                       <Button asChild>
                         <a
-                          href={`/uploads/study-materials/${m.filePath}`}
+                          href={`${BACKEND_URL}/uploads/study-materials/${m.filePath}`}
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -366,6 +391,17 @@ export default function TutorStudyMaterialUpload() {
                       <Input
                         value={editUrl}
                         onChange={(e) => setEditUrl(e.target.value)}
+                        placeholder="URL"
+                      />
+                      <Input
+                        value={editSummary}
+                        onChange={(e) => setEditSummary(e.target.value)}
+                        placeholder="Summary"
+                      />
+                      <Input
+                        value={editSteps}
+                        onChange={(e) => setEditSteps(e.target.value)}
+                        placeholder="Steps (comma-separated)"
                       />
                     </div>
                   )}

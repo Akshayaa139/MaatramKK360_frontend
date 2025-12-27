@@ -24,6 +24,9 @@ const ClassSchema = new mongoose.Schema({
       enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
       required: true
     },
+    date: {
+      type: Date
+    },
     startTime: {
       type: String,
       required: true
@@ -39,6 +42,12 @@ const ClassSchema = new mongoose.Schema({
     default: 'scheduled'
   },
   sessionLink: {
+    type: String
+  },
+  recordingLink: {
+    type: String
+  },
+  notesLink: {
     type: String
   },
   createdAt: {

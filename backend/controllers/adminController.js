@@ -633,7 +633,9 @@ const getStudentDetails = asyncHandler(async (req, res) => {
 });
 
 const getTutorDetails = asyncHandler(async (req, res) => {
+  console.log("[DEBUG] getTutorDetails called");
   const tutors = await Tutor.find().populate("user", "name email phone");
+  console.log(`[DEBUG] Found ${tutors.length} tutors`);
   const details = [];
   for (const t of tutors) {
     const classes = await Class.find({ tutor: t._id }).populate({

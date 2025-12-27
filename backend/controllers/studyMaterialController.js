@@ -8,12 +8,14 @@ const Tutor = require("../models/Tutor");
 const createStudyMaterial = asyncHandler(async (req, res) => {
   const tutor = await Tutor.findOne({ user: req.user._id });
   if (!tutor) return res.status(404).json({ message: "Tutor not found" });
-  const { title, description, type, url, subjects } = req.body || {};
+  const { title, description, type, url, subjects, summary, steps } = req.body || {};
   if (!title) return res.status(400).json({ message: "title required" });
   const mat = await StudyMaterial.create({
     tutor: tutor._id,
     title,
     description,
+    summary: summary || description || "",
+    steps: Array.isArray(steps) ? steps : (steps ? steps.split(',').map(s => s.trim()) : []),
     type: type || "link",
     url: url || "",
     subjects: Array.isArray(subjects) ? subjects : [],
@@ -42,7 +44,7 @@ const uploadStudyMaterial = asyncHandler(async (req, res) => {
   const tutor = await Tutor.findOne({ user: req.user._id });
   if (!tutor) return res.status(404).json({ message: "Tutor not found" });
   if (!req.file) return res.status(400).json({ message: "file required" });
-  const { title, description, subjects } = req.body || {};
+  const { title, description, subjects, summary, steps } = req.body || {};
   if (!title) return res.status(400).json({ message: "title required" });
   const file = req.file;
   // determine type
@@ -55,9 +57,11 @@ const uploadStudyMaterial = asyncHandler(async (req, res) => {
     tutor: tutor._id,
     title,
     description,
+    summary: summary || description || "",
+    steps: Array.isArray(steps) ? steps : (steps ? String(steps).split(',').map(s => s.trim()) : []),
     type,
     filePath: file.filename,
-    subjects: Array.isArray(subjects) ? subjects : subjects ? [subjects] : [],
+    subjects: Array.isArray(subjects) ? subjects : subjects ? (typeof subjects === 'string' ? subjects.split(',').map(s => s.trim()) : [subjects]) : [],
   });
   res.json({ message: "Uploaded", material: mat });
 });
@@ -116,17 +120,19 @@ const updateStudyMaterial = asyncHandler(async (req, res) => {
   if (String(mat.tutor) !== String(tutor._id))
     return res.status(403).json({ message: "Forbidden" });
 
-  const { title, description, url, subjects, type } = req.body || {};
+  const { title, description, url, subjects, type, summary, steps } = req.body || {};
   if (typeof title !== "undefined") mat.title = title;
   if (typeof description !== "undefined") mat.description = description;
+  if (typeof summary !== "undefined") mat.summary = summary;
+  if (typeof steps !== "undefined") mat.steps = Array.isArray(steps) ? steps : (steps ? String(steps).split(',').map(s => s.trim()) : []);
   if (typeof url !== "undefined") mat.url = url;
   if (typeof type !== "undefined") mat.type = type;
   if (typeof subjects !== "undefined")
     mat.subjects = Array.isArray(subjects)
       ? subjects
       : subjects
-      ? [subjects]
-      : [];
+        ? String(subjects).split(',').map(s => s.trim())
+        : [];
 
   await mat.save();
   res.json({ message: "Updated", material: mat });

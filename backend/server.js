@@ -41,6 +41,16 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
@@ -84,6 +94,10 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/tutor", require("./routes/tutorRoutes"));
 app.use("/api/study-materials", require("./routes/studyMaterialRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes")); // Added
+app.use("/api/tickets", require("./routes/ticketRoutes"));
+app.use("/api/mentoring", require("./routes/mentoringRoutes"));
+app.use("/api/announcements", require("./routes/announcementRoutes"));
+app.use("/api/engagement", require("./routes/engagementRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/ai", require("./routes/aiRoutes"));
 // Serve uploads statically for download/access
@@ -93,6 +107,11 @@ app.use("/api/flashcards", require("./routes/flashcardRoutes"));
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "KK360 API is running..." });
+});
+
+// Root route welcome message
+app.get("/", (req, res) => {
+  res.send("Welcome to the KK360 API Server. Use /api/health to check status.");
 });
 
 // Start server only when run directly (so tests can import without starting an extra listener)

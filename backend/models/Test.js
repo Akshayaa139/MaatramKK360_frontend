@@ -21,6 +21,11 @@ const testSchema = new mongoose.Schema({
     type: Number, // in minutes
     required: true,
   },
+  status: {
+    type: String,
+    enum: ['scheduled', 'active', 'completed'],
+    default: 'scheduled',
+  },
   fileUrl: {
     type: String,
   },
@@ -40,7 +45,20 @@ const testSchema = new mongoose.Schema({
       marks: {
         type: Number,
       },
+      answers: [
+        {
+          questionIndex: Number,
+          selectedOption: Number,
+        }
+      ],
     },
+  ],
+  questions: [
+    {
+      questionText: { type: String, required: true },
+      options: [{ type: String, required: true }],
+      correctAnswer: { type: Number, required: true }, // Index of the correct option
+    }
   ],
 }, { timestamps: true });
 

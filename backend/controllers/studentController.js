@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const Student = require("../models/Student");
 const Class = require("../models/Class");
+const ClassSession = require("../models/ClassSession");
 
 // @desc    Get students pending panel interview
 // @route   GET /api/students/pending-panel
@@ -59,13 +60,31 @@ const getMyClasses = asyncHandler(async (req, res) => {
   });
 
   console.log("Found classes count:", classes.length);
+
+  // Check for live sessions for these classes
+  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+  const liveSessions = await ClassSession.find({
+    class: { $in: classes.map(c => c._id) },
+    endTime: null,
+    $or: [
+      { lastHeartbeat: { $gte: twoMinutesAgo } },
+      { startTime: { $gte: twoMinutesAgo } }
+    ]
+  });
+
+  const liveClassIds = new Set(liveSessions.map(s => String(s.class)));
+
   const result = classes.map((c) => ({
     id: c._id,
     title: c.title,
     subject: c.subject,
     schedule: c.schedule,
     status: c.status,
+    isLive: liveClassIds.has(String(c._id)),
     sessionLink: c.sessionLink,
+    recordingLink: c.recordingLink,
+    notesLink: c.notesLink,
+    isEnrolled: c.students.some(s => String(s) === String(student._id)),
     tutor: {
       id: c.tutor?._id,
       name: c.tutor?.user?.name || "",
@@ -241,6 +260,17 @@ const getStudentNotifications = asyncHandler(async (req, res) => {
   res.json({ assignments });
 });
 
+// @desc    Get all tutors for student selection
+// @route   GET /api/students/tutors
+// @access  Private/Student
+const getTutors = asyncHandler(async (req, res) => {
+  console.log("getTutors API called by user:", req.user._id);
+  const Tutor = require("../models/Tutor");
+  const tutors = await Tutor.find({}).populate("user", "name email phone");
+  console.log("Found tutors count:", tutors.length);
+  res.json(tutors);
+});
+
 module.exports = {
   getStudentsPendingPanel,
   getStudentProfile,
@@ -248,4 +278,5 @@ module.exports = {
   getMyPerformance,
   getMyProgress,
   getStudentNotifications,
+  getTutors,
 };

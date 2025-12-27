@@ -307,11 +307,19 @@ exports.submitEvaluation = asyncHandler(async (req, res) => {
 // @route   GET /api/panels
 // @access  Private/Admin
 exports.getPanels = asyncHandler(async (req, res) => {
+    console.log("[DEBUG] getPanels called");
     const panels = await Panel.find({})
         .populate('members', 'name email role')
         .populate('timeslot')
         .populate('batch')
         .sort({ createdAt: -1 });
+
+    console.log(`[DEBUG] Found ${panels.length} panels`);
+    // Log first panel if exists to see sample data
+    if (panels.length > 0) {
+        console.log(`[DEBUG] Sample panel members: ${panels[0].members?.length || 0}`);
+        console.log(`[DEBUG] Sample panel timeslot: ${panels[0].timeslot ? 'Exists' : 'Missing'}`);
+    }
 
     res.json(panels);
 });

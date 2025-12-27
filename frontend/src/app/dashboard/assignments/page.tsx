@@ -17,6 +17,7 @@ import { AssignmentDialog } from "@/components/AssignmentDialog";
 import { SubmitAssignmentDialog } from "@/components/SubmitAssignmentDialog";
 import { SubmissionReviewDialog } from "@/components/SubmissionReviewDialog";
 import { TestDialog } from "@/components/TestDialog";
+import { TakeQuizDialog } from "@/components/TakeQuizDialog";
 
 interface Assignment {
   _id: string;
@@ -40,6 +41,11 @@ interface Test {
   duration?: string;
   status?: string;
   classId?: string;
+  questions?: {
+    questionText: string;
+    options: string[];
+    correctAnswer: number;
+  }[];
 }
 
 interface Class {
@@ -50,7 +56,7 @@ interface Class {
 
 export default function AssignmentsPage() {
   const { data: session } = useTabSession();
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as any)?.role?.toLowerCase();
   const [activeTab, setActiveTab] = useState("assignments");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -66,6 +72,8 @@ export default function AssignmentsPage() {
   const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | undefined>(undefined);
   const [selectedTest, setSelectedTest] = useState<Test | undefined>(undefined);
+  const [isTakeQuizOpen, setIsTakeQuizOpen] = useState(false);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -122,7 +130,11 @@ export default function AssignmentsPage() {
         try {
           const endpoint = role === 'student' ? `/students/tests/${filterClass}` : `/tests/${filterClass}`;
           const response = await api.get(endpoint);
-          setTests(response.data);
+          const mappedTests = response.data.map((t: any) => ({
+            ...t,
+            classId: t.class?._id || t.class,
+          }));
+          setTests(mappedTests);
         } catch (err) {
           setError("Failed to fetch tests.");
           setTests([]);
@@ -138,6 +150,22 @@ export default function AssignmentsPage() {
       }
     }
   }, [filterClass, activeTab, role]);
+
+  useEffect(() => {
+    const fetchStudentProfile = async () => {
+      if (role === "student" && !studentId) {
+        try {
+          const response = await api.get("/students/profile");
+          if (response.data.student) {
+            setStudentId(response.data.student._id);
+          }
+        } catch (error) {
+          console.error("Failed to fetch student profile", error);
+        }
+      }
+    };
+    fetchStudentProfile();
+  }, [role]);
 
   const handleCreateAssignment = () => {
     setSelectedAssignment(undefined);
@@ -237,29 +265,23 @@ export default function AssignmentsPage() {
 
     (async () => {
       try {
-        const formData = new FormData();
-        formData.append("title", safeTest.title);
-        formData.append("description", safeTest.description ?? "");
-        formData.append("date", safeTest.date || "");
-        formData.append("duration", safeTest.duration ?? "");
-
+        const payload = {
+          title: safeTest.title,
+          description: safeTest.description ?? "",
+          date: safeTest.date || "",
+          duration: Number(safeTest.duration ?? 0),
+          questions: safeTest.questions || [],
+          status: safeTest.status || "scheduled",
+          class: safeTest.classId || filterClass,
+        };
 
         if (safeTest._id) {
           // Update
-          const response = await api.put(`/tests/${safeTest._id}`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
+          const response = await api.put(`/tests/${safeTest._id}`, payload);
           setTests(tests.map((t) => (t._id === safeTest._id ? response.data : t)));
         } else {
           // Create
-          formData.append("class", safeTest.classId || filterClass);
-          const response = await api.post("/tests", formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
+          const response = await api.post("/tests", payload);
           setTests([...tests, response.data]);
         }
         setIsTestDialogOpen(false);
@@ -540,6 +562,7 @@ export default function AssignmentsPage() {
                         <TableHead>Date</TableHead>
                         <TableHead>Duration</TableHead>
                         <TableHead>Status</TableHead>
+                        {role === 'student' && <TableHead>Score</TableHead>}
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -547,9 +570,14 @@ export default function AssignmentsPage() {
                       {filteredTests.map((test) => (
                         <TableRow key={test._id}>
                           <TableCell className="font-medium">
-                            <div className="flex items-center">
-                              <CheckCircle2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                              {test.title}
+                            <div className="flex flex-col">
+                              <div className="flex items-center">
+                                <CheckCircle2 className={`h-4 w-4 mr-2 ${test.questions && test.questions.length > 0 ? 'text-maatram-blue' : 'text-muted-foreground'}`} />
+                                {test.title}
+                              </div>
+                              {test.questions && test.questions.length > 0 && (
+                                <span className="text-[10px] text-maatram-blue font-bold uppercase ml-6 mt-1">MCQ Quiz</span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -565,36 +593,77 @@ export default function AssignmentsPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={test.status === "scheduled" ? "default" : "secondary"}>
-                              {test.status}
+                            <Badge variant={
+                              test.status === "scheduled" ? "default" :
+                                test.status === "active" ? "success" :
+                                  test.status === "completed" ? "secondary" : "outline"
+                            }>
+                              {test.status || "scheduled"}
                             </Badge>
                           </TableCell>
+                          {role === 'student' && (
+                            <TableCell>
+                              {(() => {
+                                const sub = (test as any).submissions?.find((s: any) =>
+                                  String(s.student) === String(studentId) ||
+                                  String(s.student?._id || s.student) === String(studentId)
+                                );
+                                return sub ? (
+                                  <Badge variant="success" className="bg-green-100 text-green-700">
+                                    {sub.marks}%
+                                  </Badge>
+                                ) : (
+                                  test.questions && test.questions.length > 0 ? (
+                                    <Badge variant="outline" className="text-maatram-blue font-semibold border-maatram-blue/30">Ready to Take</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-slate-400 italic">No Questions</Badge>
+                                  )
+                                );
+                              })()}
+                            </TableCell>
+                          )}
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => { }}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              {role === 'tutor' && (
+                              {/* Student View Action */}
+                              {role === 'student' && test.questions && test.questions.length > 0 && (
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => { }}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedTest(test);
+                                    setIsTakeQuizOpen(true);
+                                  }}
+                                  className="border-maatram-blue text-maatram-blue hover:bg-blue-50"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  {(() => {
+                                    const sub = (test as any).submissions?.find((s: any) =>
+                                      String(s.student) === String(studentId) ||
+                                      String(s.student?._id || s.student) === String(studentId)
+                                    );
+                                    return sub ? "Retake Quiz" : "Take Quiz";
+                                  })()}
                                 </Button>
                               )}
+
+                              {/* Tutors manage via Edit button */}
+
                               {role === 'tutor' && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => { }}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditTest(test._id!)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteTest(test._id!)}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </>
                               )}
                             </div>
                           </TableCell>
@@ -665,6 +734,16 @@ export default function AssignmentsPage() {
         }
         classes={classes}
         selectedClassId={filterClass}
+      />
+
+      <TakeQuizDialog
+        isOpen={isTakeQuizOpen}
+        onClose={() => setIsTakeQuizOpen(false)}
+        test={selectedTest as any}
+        onSuccess={(marks) => {
+          // Re-fetch tests to update status if needed
+          // For now, marks are shown in the dialog
+        }}
       />
     </div>
   );

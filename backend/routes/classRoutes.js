@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTutorClasses, getAllClasses, updateClassSchedule, startClassSession, createClass, logSessionEvent, getLiveSessions, joinClassSession } = require('../controllers/classController');
+const { getTutorClasses, getAllClasses, updateClassSchedule, startClassSession, createClass, logSessionEvent, sendHeartbeat, getLiveSessions, joinClassSession, getClassSessions } = require('../controllers/classController');
 const { protect, admin, authorize } = require('../middleware/authMiddleware');
 
 // Get all classes for a specific tutor
@@ -24,5 +24,9 @@ router.post('/', protect, authorize('tutor'), createClass);
 
 // Session Logging
 router.route('/session/:sessionId/log').post(protect, logSessionEvent);
+router.route('/session/:sessionId/heartbeat').post(protect, sendHeartbeat);
+
+// Get Session History
+router.get('/:classId/sessions', protect, getClassSessions);
 
 module.exports = router;

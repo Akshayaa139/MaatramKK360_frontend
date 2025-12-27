@@ -6,11 +6,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Users, Video, FileText, MessageSquare, Loader2, Link as LinkIcon, Edit2, Plus, Check, X, UserCheck, XCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Users, Video, FileText, MessageSquare, Loader2, Link as LinkIcon, Edit2, Plus, Check, X, UserCheck, XCircle, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { toast } from "@/components/ui/use-toast";
 
@@ -20,6 +24,7 @@ interface Class {
   description: string;
   schedule: {
     day: string;
+    date?: string;
     startTime: string;
     endTime: string;
   };
@@ -29,25 +34,35 @@ interface Class {
   attendance?: number;
   feedback?: number;
   sessionLink?: string;
+  recordingLink?: string;
+  notesLink?: string;
   nextDate?: Date;
+  isLive?: boolean;
 }
 
-const getNextClassDate = (dayName: string, startTime: string, endTime: string): Date => {
+const getNextClassDate = (dayName: string, startTime: string, endTime: string, classDate?: string): Date => {
+  const [hours, minutes] = startTime.split(':').map(Number);
+
+  if (classDate) {
+    const d = new Date(classDate);
+    d.setHours(hours || 0, minutes || 0, 0, 0);
+    return d;
+  }
+
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const targetDayIdx = days.indexOf(dayName);
   if (targetDayIdx === -1) return new Date();
 
   const now = new Date();
   const currentDayIdx = now.getDay();
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const [endHours, endMinutes] = endTime.split(':').map(Number); // Needed for logic
+  // ... rest same
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
 
   let diff = targetDayIdx - currentDayIdx;
 
   if (diff === 0) {
-    // It's the same day, check if the class is OVER
     const classEndTime = new Date(now);
-    classEndTime.setHours(endHours, endMinutes, 0, 0);
+    classEndTime.setHours(endHours || 23, endMinutes || 59, 0, 0);
 
     if (classEndTime < now) {
       diff = 7;
@@ -58,11 +73,21 @@ const getNextClassDate = (dayName: string, startTime: string, endTime: string): 
 
   const nextDate = new Date(now);
   nextDate.setDate(now.getDate() + diff);
-  nextDate.setHours(hours, minutes, 0, 0);
+  nextDate.setHours(hours || 0, minutes || 0, 0, 0);
   return nextDate;
 };
 
-const getLastClassDate = (dayName: string, startTime: string, endTime: string): Date | null => {
+const getLastClassDate = (dayName: string, startTime: string, endTime: string, classDate?: string): Date | null => {
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+  if (classDate) {
+    const d = new Date(classDate);
+    d.setHours(endHours || 23, endMinutes || 59, 0, 0);
+    const now = new Date();
+    if (d < now) return d;
+    return null;
+  }
+
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const targetDayIdx = days.indexOf(dayName);
   const now = new Date();
@@ -70,9 +95,8 @@ const getLastClassDate = (dayName: string, startTime: string, endTime: string): 
 
   // Calculate if a session finished TODAY
   if (currentDayIdx === targetDayIdx) {
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
     const classEndTime = new Date(now);
-    classEndTime.setHours(endHours, endMinutes, 0, 0);
+    classEndTime.setHours(endHours || 23, endMinutes || 59, 0, 0);
 
     if (classEndTime < now) {
       // It finished today
@@ -93,13 +117,29 @@ export default function MyClassesPage() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [meetingLink, setMeetingLink] = useState("");
 
+  // Edit Links (Recording/Notes) State
+  const [isEditLinksModalOpen, setIsEditLinksModalOpen] = useState(false);
+  const [editingLinksClass, setEditingLinksClass] = useState<Class | null>(null);
+  const [recordingLink, setRecordingLink] = useState("");
+  const [notesLink, setNotesLink] = useState("");
+  const [savingLinks, setSavingLinks] = useState(false);
+
   // Create Class Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newClass, setNewClass] = useState({
+  const [newClass, setNewClass] = useState<{
+    title: string;
+    subject: string;
+    description: string;
+    day: string;
+    date: Date | undefined;
+    startTime: string;
+    endTime: string;
+  }>({
     title: "",
     subject: "",
     description: "",
     day: "Monday",
+    date: undefined,
     startTime: "",
     endTime: ""
   });
@@ -113,6 +153,11 @@ export default function MyClassesPage() {
   const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, "present" | "absent">>({});
   const [markingAttendance, setMarkingAttendance] = useState<string | null>(null);
+
+  // Session Details State
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [classSessions, setClassSessions] = useState<any[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     fetchClasses();
@@ -148,7 +193,7 @@ export default function MyClassesPage() {
     .filter(c => c.status === 'scheduled' || c.status === 'rescheduled')
     .map(c => ({
       ...c,
-      nextDate: getNextClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime)
+      nextDate: getNextClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime, c.schedule.date)
     }))
     .sort((a, b) => (a.nextDate?.getTime() || 0) - (b.nextDate?.getTime() || 0));
 
@@ -156,18 +201,22 @@ export default function MyClassesPage() {
   const virtualPastClasses = classes
     .filter(c => c.status === 'scheduled' || c.status === 'rescheduled')
     .map(c => {
-      const lastDate = getLastClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime);
+      const lastDate = getLastClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime, c.schedule.date);
       if (lastDate) {
         return { ...c, status: 'completed', nextDate: lastDate, _virtual: true };
       }
       return null;
     })
-    .filter((c): c is Class & { nextDate: Date } => c !== null);
+    .filter((c): c is NonNullable<typeof c> => c !== null);
 
   const pastClasses = [
     ...classes.filter(c => c.status === 'completed' || c.status === 'cancelled'),
     ...virtualPastClasses
-  ].sort((a, b) => (b.nextDate?.getTime() || 0) - (a.nextDate?.getTime() || 0)); // Sort newest first
+  ].filter(c => !!c).sort((a, b) => {
+    const timeA = a!.nextDate ? new Date(a!.nextDate).getTime() : 0;
+    const timeB = b!.nextDate ? new Date(b!.nextDate).getTime() : 0;
+    return timeB - timeA;
+  }); // Sort newest first
 
   const handleStartClassClick = async (classItem: Class) => {
     // Open attendance modal immediately
@@ -235,7 +284,7 @@ export default function MyClassesPage() {
 
   const handleCreateClass = async () => {
     // Validation
-    if (!newClass.title || !newClass.subject || !newClass.day || !newClass.startTime || !newClass.endTime) {
+    if (!newClass.title || !newClass.subject || (!newClass.day && !newClass.date) || !newClass.startTime || !newClass.endTime) {
       toast({ title: "Error", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
@@ -250,7 +299,7 @@ export default function MyClassesPage() {
       toast({ title: "Success", description: `Class created with ${payload.students.length} students assigned.` });
       setIsCreateModalOpen(false);
       // Reset form
-      setNewClass({ title: "", subject: "", description: "", day: "Monday", startTime: "", endTime: "" });
+      setNewClass({ title: "", subject: "", description: "", day: "Monday", date: undefined, startTime: "", endTime: "" });
       setAssignAllStudents(false);
       fetchClasses();
     } catch (error) {
@@ -262,8 +311,43 @@ export default function MyClassesPage() {
     console.log(`Cancelling class ${classId}`);
   };
 
-  const handleViewDetails = (classId: string) => {
-    console.log(`Viewing details for class ${classId}`);
+  const handleViewDetails = async (classId: string) => {
+    setSelectedClass(classes.find(c => c._id === classId) || null);
+    setIsDetailsModalOpen(true);
+    setLoadingSessions(true);
+    try {
+      const res = await api.get(`/classes/${classId}/sessions`);
+      setClassSessions(res.data);
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to fetch session details.", variant: "destructive" });
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const handleOpenEditLinks = (cls: Class) => {
+    setEditingLinksClass(cls);
+    setRecordingLink(cls.recordingLink || "");
+    setNotesLink(cls.notesLink || "");
+    setIsEditLinksModalOpen(true);
+  };
+
+  const handleSaveLinks = async () => {
+    if (!editingLinksClass) return;
+    setSavingLinks(true);
+    try {
+      await api.put(`/classes/${editingLinksClass._id}/schedule`, {
+        recordingLink,
+        notesLink
+      });
+      toast({ title: "Success", description: "Links updated successfully." });
+      setIsEditLinksModalOpen(false);
+      fetchClasses();
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to update links.", variant: "destructive" });
+    } finally {
+      setSavingLinks(false);
+    }
   };
 
   if (loading) {
@@ -283,7 +367,7 @@ export default function MyClassesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 p-4 md:p-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">My Classes</h2>
         <Button onClick={() => setIsCreateModalOpen(true)}>
@@ -306,26 +390,36 @@ export default function MyClassesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {upcomingClasses.map((classItem) => (
-                <Card key={classItem._id} className="flex flex-col h-full border-l-4 border-l-primary">
-                  <CardHeader className="pb-2">
+                <Card key={classItem._id} className="flex flex-col h-full border-l-4 border-l-primary overflow-hidden">
+                  <CardHeader>
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{classItem.title}</CardTitle>
-                      <Badge variant={
-                        classItem.nextDate && classItem.nextDate.getDate() === new Date().getDate()
-                          ? "default"
-                          : "secondary"
-                      }>
-                        {classItem.nextDate && classItem.nextDate.getDate() === new Date().getDate() ? "Today" : "Upcoming"}
-                      </Badge>
+                      <div className="flex gap-1">
+                        {classItem.isLive && (
+                          <Badge className="bg-red-600 hover:bg-red-700 animate-pulse text-white">
+                            LIVE
+                          </Badge>
+                        )}
+                        <Badge variant={
+                          classItem.nextDate && classItem.nextDate.getDate() === new Date().getDate()
+                            ? "default"
+                            : "secondary"
+                        }>
+                          {classItem.nextDate && classItem.nextDate.getDate() === new Date().getDate() ? "Today" : "Upcoming"}
+                        </Badge>
+                      </div>
                     </div>
                     <CardDescription className="line-clamp-2">{classItem.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="pb-2 flex-grow">
-                    <div className="space-y-2 text-sm">
+                  <CardContent className="flex-grow">
+                    <div className="space-y-4 text-sm">
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-primary" />
+                        <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
                         <span className="font-semibold text-foreground">
-                          {classItem.nextDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                          {classItem.schedule.date
+                            ? new Date(classItem.schedule.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                            : classItem.nextDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                          }
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -344,7 +438,7 @@ export default function MyClassesPage() {
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter className="flex gap-2 pt-2">
+                  <CardFooter className="flex gap-4">
                     <Button
                       className="flex-1"
                       onClick={() => handleStartClassClick(classItem)}
@@ -383,19 +477,19 @@ export default function MyClassesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {pastClasses.map((classItem) => (
-                <Card key={classItem._id} className="flex flex-col h-full">
-                  <CardHeader className="pb-2">
+                <Card key={classItem._id} className="flex flex-col h-full overflow-hidden">
+                  <CardHeader>
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">{classItem.title}</CardTitle>
                       <Badge variant="secondary">{classItem.status}</Badge>
                     </div>
                     <CardDescription className="line-clamp-2">{classItem.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="pb-2 flex-grow">
-                    <div className="space-y-2 text-sm">
+                  <CardContent className="flex-grow">
+                    <div className="space-y-4 text-sm">
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{classItem.schedule.day}</span>
+                        <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span>{classItem.schedule.date ? format(new Date(classItem.schedule.date), "PPP") : classItem.schedule.day}</span>
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -407,14 +501,22 @@ export default function MyClassesPage() {
                       </div>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex gap-2 pt-2">
+                  <CardFooter className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 min-w-[120px]"
                       onClick={() => handleViewDetails(classItem._id)}
                     >
                       <FileText className="h-4 w-4 mr-2" />
-                      View Details
+                      Details
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 min-w-[120px]"
+                      onClick={() => handleOpenEditLinks(classItem)}
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Add Links
                     </Button>
                   </CardFooter>
                 </Card>
@@ -486,22 +588,34 @@ export default function MyClassesPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="day" className="text-right">
-                Day
+              <Label htmlFor="date" className="text-right">
+                Date
               </Label>
-              <Select
-                value={newClass.day}
-                onValueChange={(val) => setNewClass({ ...newClass, day: val })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(d => (
-                    <SelectItem key={d} value={d}>{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newClass.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {newClass.date ? format(newClass.date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newClass.date}
+                      onSelect={(date) => setNewClass(prev => ({ ...prev, date }))}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="start" className="text-right">
@@ -611,6 +725,112 @@ export default function MyClassesPage() {
 
           <DialogFooter>
             <Button onClick={() => setIsAttendanceModalOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Session Details Modal */}
+      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Session History - {selectedClass?.title}</DialogTitle>
+            <DialogDescription>
+              View when the class started, ended, and who attended.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 py-4">
+            {loadingSessions ? (
+              <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>
+            ) : classSessions.length > 0 ? (
+              <div className="space-y-4">
+                {classSessions.map((session) => (
+                  <Card key={session._id} className="border border-muted">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {new Date(session.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <Badge variant={session.status === 'completed' ? "secondary" : "default"}>
+                          {session.status === 'completed' ? "Completed" : "Ongoing"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Start Time</span>
+                          <span>{new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> End Time</span>
+                          <span>{session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</span>
+                        </div>
+                      </div>
+                      <div className="pt-2">
+                        <span className="text-muted-foreground flex items-center gap-1 mb-2"><Users className="h-3 w-3" /> Participants ({session.participantCount})</span>
+                        <div className="flex flex-wrap gap-1">
+                          {session.participants.length > 0 ? (
+                            session.participants.map((name: string, i: number) => (
+                              <Badge key={i} variant="outline" className="text-[10px]">{name}</Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs italic text-muted-foreground">No students logged</span>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No session history found for this class.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsDetailsModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Links Modal */}
+      <Dialog open={isEditLinksModalOpen} onOpenChange={setIsEditLinksModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Resource Links</DialogTitle>
+            <DialogDescription>
+              Provide links for the class recording and study notes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recLink">Recording URL</Label>
+              <Input
+                id="recLink"
+                placeholder="https://..."
+                value={recordingLink}
+                onChange={(e) => setRecordingLink(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notesLnk">Notes URL</Label>
+              <Input
+                id="notesLnk"
+                placeholder="https://..."
+                value={notesLink}
+                onChange={(e) => setNotesLink(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsEditLinksModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveLinks} disabled={savingLinks}>
+              {savingLinks ? <Loader2 className="animate-spin" /> : "Save Links"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

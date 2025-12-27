@@ -113,10 +113,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-medium">
+        <h2 className="text-2xl font-heading font-bold text-gray-900 tracking-tight">
           Welcome back, {session?.user?.name || "User"}
         </h2>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 mt-1">
           Here's what's happening with your KK360 platform today.
         </p>
       </div>
@@ -128,12 +128,14 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className="h-4 w-4 text-gray-500" />
+                <CardTitle className="text-sm font-medium text-gray-500 uppercase tracking-wider">{stat.title}</CardTitle>
+                <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center">
+                  <stat.icon className="h-4 w-4 text-gray-600" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-gray-500">{stat.description}</p>
+                <div className="text-3xl font-heading font-bold text-gray-900">{stat.value}</div>
+                <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
               </CardContent>
             </Card>
           ))}

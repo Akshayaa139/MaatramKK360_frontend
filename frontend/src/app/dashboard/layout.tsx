@@ -103,6 +103,7 @@ export default function DashboardLayout({
       href: "/dashboard/study-materials",
       icon: BookOpen,
     },
+    { name: "Mentoring", href: "/dashboard/student/mentoring", icon: Users },
     { name: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
   ];
 
@@ -153,7 +154,7 @@ export default function DashboardLayout({
 
   return (
     <ToastProvider>
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex h-screen bg-gray-50 font-sans">
         {/* Mobile sidebar */}
         <div className="lg:hidden">
           <Button
@@ -177,13 +178,13 @@ export default function DashboardLayout({
           )}
 
           <aside
-            className={`fixed inset-y-0 left-0 z-30 w-64 transform bg-white transition duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            className={`fixed inset-y-0 left-0 z-30 w-64 transform bg-sidebar transition duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
               }`}
           >
-            <div className="flex h-16 items-center justify-center border-b">
-              <h2 className="text-xl font-bold">KK360 Platform</h2>
+            <div className="flex h-16 items-center justify-center border-b border-sidebar-border bg-sidebar">
+              <h2 className="text-xl font-heading font-bold text-sidebar-primary tracking-tight">Maatram KK</h2>
             </div>
-            <nav className="mt-5 px-2">
+            <nav className="mt-5 px-3 space-y-1">
               {finalNavigation.map((item) => (
                 <Link
                   key={item.name}
@@ -196,11 +197,11 @@ export default function DashboardLayout({
                   <div className="flex items-center">
                     <item.icon
                       className={`mr-3 h-5 w-5 flex-shrink-0 ${pathname === item.href
-                        ? "text-blue-600"
-                        : "text-gray-400 group-hover:text-gray-500"
+                        ? "text-sidebar-primary"
+                        : "text-gray-400 group-hover:text-sidebar-primary"
                         }`}
                     />
-                    {item.name}
+                    <span className="font-medium">{item.name}</span>
                   </div>
                   {(item as any).notificationCount && (
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
@@ -210,35 +211,35 @@ export default function DashboardLayout({
                 </Link>
               ))}
             </nav>
-            <div className="absolute bottom-0 w-full border-t p-4">
+            <div className="absolute bottom-0 w-full border-t border-sidebar-border p-4 bg-sidebar">
               <div className="flex items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-                  <span className="text-sm font-medium text-gray-700">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent border border-sidebar-border">
+                  <span className="text-sm font-bold text-sidebar-primary">
                     {session?.user?.name?.[0] || "U"}
                   </span>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700">
+                <div className="ml-3 overflow-hidden">
+                  <p className="text-sm font-bold text-sidebar-foreground truncate">
                     {session?.user?.name || "User"}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-sidebar-foreground/60 truncate">
                     {session?.user?.email}
                   </p>
                 </div>
               </div>
-              <div className="mt-3 space-y-1">
+              <div className="mt-4 space-y-1">
                 <Link
                   href="/dashboard/settings"
-                  className="group flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  className="group flex items-center rounded-lg px-2 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary transition-colors"
                 >
-                  <Settings className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                  <Settings className="mr-3 h-5 w-5 text-gray-400 group-hover:text-sidebar-primary" />
                   Settings
                 </Link>
                 <Link
                   href="/api/auth/signout"
-                  className="group flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  className="group flex items-center rounded-lg px-2 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary transition-colors"
                 >
-                  <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                  <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-sidebar-primary" />
                   Sign out
                 </Link>
               </div>
@@ -247,59 +248,64 @@ export default function DashboardLayout({
         </div>
 
         {/* Desktop sidebar */}
-        <aside className="hidden w-64 border-r bg-white lg:block">
-          <div className="flex h-16 items-center justify-center border-b">
-            <h2 className="text-xl font-bold">KK360 Platform</h2>
+        <aside className="hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
+          <div className="flex h-16 items-center justify-center border-b border-sidebar-border bg-sidebar">
+            <h2 className="text-xl font-heading font-bold text-sidebar-primary tracking-tight">Maatram KK</h2>
           </div>
-          <nav className="mt-5 px-2">
+          <nav className="mt-5 px-3 space-y-1">
             {finalNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`group flex items-center justify-between rounded-md px-2 py-2 text-sm font-medium ${pathname === item.href
-                  ? "bg-gray-100 text-blue-600"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${pathname === item.href
+                  ? "bg-sidebar-accent text-sidebar-primary shadow-sm"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary"
                   }`}
               >
                 <div className="flex items-center">
                   <item.icon
                     className={`mr-3 h-5 w-5 flex-shrink-0 ${pathname === item.href
-                      ? "text-blue-600"
-                      : "text-gray-400 group-hover:text-gray-500"
+                      ? "text-sidebar-primary"
+                      : "text-gray-400 group-hover:text-sidebar-primary"
                       }`}
                   />
-                  {item.name}
+                  <span className="font-medium">{item.name}</span>
                 </div>
                 {(item as any).notificationCount && (
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground">
                     {(item as any).notificationCount}
                   </div>
                 )}
               </Link>
             ))}
           </nav>
-          <div className="absolute bottom-0 w-64 border-t p-4">
+          <div className="absolute bottom-0 w-64 border-t border-sidebar-border p-4 bg-sidebar">
             <div className="flex items-center">
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent border border-sidebar-border">
+                <span className="text-sm font-bold text-sidebar-primary">
+                  {session?.user?.name?.[0] || "U"}
+                </span>
+              </div>
+              <div className="ml-3 overflow-hidden">
+                <p className="text-sm font-bold text-sidebar-foreground truncate">
                   {session?.user?.name || "User"}
                 </p>
-                <p className="text-xs text-gray-500">{session?.user?.email}</p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">{session?.user?.email}</p>
               </div>
             </div>
-            <div className="mt-3 space-y-1">
+            <div className="mt-4 space-y-1">
               <Link
                 href="/dashboard/settings"
-                className="group flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                className="group flex items-center rounded-lg px-2 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary transition-colors"
               >
-                <Settings className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                <Settings className="mr-3 h-5 w-5 text-gray-400 group-hover:text-sidebar-primary" />
                 Settings
               </Link>
               <Link
                 href="/api/auth/signout"
-                className="group flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                className="group flex items-center rounded-lg px-2 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-primary transition-colors"
               >
-                <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                <LogOut className="mr-3 h-5 w-5 text-gray-400 group-hover:text-sidebar-primary" />
                 Sign out
               </Link>
             </div>
@@ -308,23 +314,25 @@ export default function DashboardLayout({
 
         {/* Main content */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="bg-white shadow">
-            <div className="px-4 py-6 sm:px-6 lg:px-8">
-              <h1 className="text-2xl font-bold text-gray-900">
+          <header className="bg-white border-b border-gray-200">
+            <div className="px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
+              <h1 className="text-xl font-heading font-bold text-gray-900 tracking-tight">
                 {pathname === "/dashboard"
                   ? "Dashboard"
-                  : (pathname.split("/").pop()?.charAt(0).toUpperCase() || "") +
-                  pathname.split("/").pop()?.slice(1) || ""}
+                  : (pathname.split("/").pop()?.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") || "")}
               </h1>
+              <div className="flex items-center gap-4">
+                {/* Additional header items could go here */}
+              </div>
             </div>
           </header>
-          <main className="flex-1 overflow-auto bg-gray-100 p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
             {children}
           </main>
         </div>
       </div>
       <ToastViewport />
-      <ChatWidget />
+      {session?.user?.role === 'student' && <ChatWidget />}
     </ToastProvider>
   );
 }

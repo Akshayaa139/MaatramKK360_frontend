@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import api from "@/lib/api";
 import AutoMapButton from "@/components/admin/AutoMapButton";
 import { Button } from "@/components/ui/button";
@@ -143,11 +143,16 @@ export default function PanelInterviewManagement() {
 
   // Load panels, available timeslots, panel members, and selected students from backend
   useEffect(() => {
-    const authHeader = session?.accessToken
-      ? { Authorization: `Bearer ${session.accessToken}` }
-      : undefined;
+    if (!session || !session.accessToken) {
+      console.log("[DEBUG] Waiting for session or accessToken...");
+      return;
+    }
+
+    const token = session.accessToken;
+    const authHeader = { Authorization: `Bearer ${token}` };
     const load = async () => {
       try {
+        console.log("[DEBUG] Fetching panel data with token:", token.substring(0, 10) + "...");
         const [panelsRes, timeslotsRes, tutorsRes, selectedAppsRes] =
           await Promise.all([
             api.get("/admin/panels", { headers: authHeader }),
@@ -157,6 +162,8 @@ export default function PanelInterviewManagement() {
               headers: authHeader,
             }),
           ]);
+
+        console.log("[DEBUG] Data fetched successfully");
 
         const panels: any[] = panelsRes.data || [];
         const slots: InterviewSlot[] = panels.map((p) => ({
@@ -262,7 +269,16 @@ export default function PanelInterviewManagement() {
             status: "pending",
           }))
         );
-      } catch { }
+      } catch (err: any) {
+        console.error("Error loading panel management data:", err);
+        if (err.response) {
+          console.error("API Response Error:", err.response.status, err.response.data);
+          if (err.response.status === 401) {
+            console.warn("Session invalid, signing out...");
+            signOut({ callbackUrl: '/login' });
+          }
+        }
+      }
     };
     load();
   }, [session]);

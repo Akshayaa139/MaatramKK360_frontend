@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,12 +10,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, HelpCircle, MessageSquare, FileText, BookOpen, Video, ExternalLink, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Search, HelpCircle, MessageSquare, FileText, BookOpen, Video, ExternalLink, Send, CheckCircle2 } from "lucide-react";
+import api from "@/lib/api";
+import { toast } from "sonner"; // Assuming sonner is available or similar toast utility
 
 export default function HelpSupportPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("faq");
-  
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [ticketSubject, setTicketSubject] = useState("");
+  const [ticketCategory, setTicketCategory] = useState("");
+  const [ticketPriority, setTicketPriority] = useState("");
+  const [ticketDescription, setTicketDescription] = useState("");
+  const [replyMessage, setReplyMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [isResourceDialogOpen, setIsResourceDialogOpen] = useState(false);
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const fetchTickets = async () => {
+    try {
+      const res = await api.get("/tickets");
+      setSupportTickets(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch tickets", err);
+    }
+  };
+
   // Sample FAQ data
   const faqCategories = [
     {
@@ -82,57 +107,7 @@ export default function HelpSupportPage() {
       ]
     }
   ];
-  
-  // Sample support ticket data
-  const supportTickets = [
-    {
-      id: "ticket1",
-      subject: "Video freezing during class",
-      date: "2023-12-10",
-      status: "open",
-      messages: [
-        {
-          sender: "You",
-          message: "I've been experiencing video freezing issues during my classes. It happens about 15 minutes into the session and requires me to refresh the page.",
-          timestamp: "2023-12-10 14:30"
-        },
-        {
-          sender: "Support",
-          message: "Thank you for reporting this issue. Could you please provide more details about your internet connection speed and the browser you're using?",
-          timestamp: "2023-12-10 15:45"
-        }
-      ]
-    },
-    {
-      id: "ticket2",
-      subject: "Unable to upload assignment files",
-      date: "2023-12-05",
-      status: "closed",
-      messages: [
-        {
-          sender: "You",
-          message: "I'm trying to upload PDF files for an assignment but keep getting an error message saying 'File type not supported'.",
-          timestamp: "2023-12-05 10:15"
-        },
-        {
-          sender: "Support",
-          message: "We've identified the issue with PDF uploads and have deployed a fix. Please try uploading your files again and let us know if you encounter any further problems.",
-          timestamp: "2023-12-05 13:20"
-        },
-        {
-          sender: "You",
-          message: "The upload is working now. Thank you for the quick resolution!",
-          timestamp: "2023-12-05 14:05"
-        },
-        {
-          sender: "Support",
-          message: "Great! We're glad the issue is resolved. Don't hesitate to contact us if you need any further assistance.",
-          timestamp: "2023-12-05 14:30"
-        }
-      ]
-    }
-  ];
-  
+
   // Sample resources data
   const resources = [
     {
@@ -140,62 +115,124 @@ export default function HelpSupportPage() {
       title: "Tutor Handbook",
       type: "document",
       description: "Comprehensive guide covering all policies, procedures, and best practices for tutors.",
-      link: "#"
+      link: "#",
+      steps: [
+        "Introduction to Maatram Foundation mission and values.",
+        "Understanding your roles and responsibilities as a volunteer tutor.",
+        "Familiarizing with the curriculum and teaching methodology.",
+        "Reviewing the code of conduct and student interaction policies."
+      ]
     },
     {
       id: "res2",
       title: "Virtual Classroom Tutorial",
       type: "video",
       description: "Step-by-step guide on using all features of the virtual classroom effectively.",
-      link: "#"
+      link: "#",
+      steps: [
+        "Setting up your audio and video equipment for optimal performance.",
+        "Navigating the virtual whiteboard and screen sharing features.",
+        "Creating and managing breakout rooms for group activities.",
+        "Recording sessions and uploading them for student review."
+      ]
     },
     {
       id: "res3",
       title: "Effective Online Teaching Strategies",
       type: "document",
       description: "Research-based strategies to enhance student engagement and learning outcomes in online environments.",
-      link: "#"
+      link: "#",
+      steps: [
+        "Planning interactive lessons that keep students engaged.",
+        "Using digital tools like polls and quizzes to assess understanding in real-time.",
+        "Establishing clear communication channels and feedback loops.",
+        "Creating a positive and inclusive online learning environment."
+      ]
     },
     {
       id: "res4",
       title: "Accessibility Guidelines",
       type: "document",
       description: "Guidelines for creating accessible learning materials for students with diverse needs.",
-      link: "#"
+      link: "#",
+      steps: [
+        "Designing materials with clear fonts and high color contrast.",
+        "Providing alternative text for images and captions for videos.",
+        "Using structured headings and lists for easy navigation.",
+        "Ensuring all digital tools are compatible with screen readers."
+      ]
     },
     {
       id: "res5",
       title: "Assessment Design Workshop",
       type: "video",
       description: "Workshop on designing effective assessments for online learning environments.",
-      link: "#"
+      link: "#",
+      steps: [
+        "Aligning assessments with learning objectives and outcomes.",
+        "Creating a variety of question types (MCQs, short answer, project-based).",
+        "Developing rubrics for fair and consistent grading.",
+        "Analyzing assessment data to identify areas for student improvement."
+      ]
     }
   ];
-  
+
   // Filter FAQ based on search query
   const filteredFAQs = faqCategories.map(category => ({
     ...category,
-    questions: category.questions.filter(q => 
-      q.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    questions: category.questions.filter(q =>
+      q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.answer.toLowerCase().includes(searchQuery.toLowerCase())
     )
   })).filter(category => category.questions.length > 0);
-  
+
   // Filter resources based on search query
-  const filteredResources = resources.filter(resource => 
-    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredResources = resources.filter(resource =>
+    resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     resource.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
-  const handleSubmitTicket = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Submitting support ticket");
-    // Implementation would go here
+
+  const handleViewResource = (resource: any) => {
+    setSelectedResource(resource);
+    setIsResourceDialogOpen(true);
   };
-  
-  const handleSendMessage = (ticketId: string, message: string) => {
-    console.log(`Sending message for ticket ${ticketId}: ${message}`);
-    // Implementation would go here
+
+  const handleSubmitTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticketSubject || !ticketCategory || !ticketPriority || !ticketDescription) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await api.post("/tickets", {
+        subject: ticketSubject,
+        category: ticketCategory,
+        priority: ticketPriority,
+        description: ticketDescription
+      });
+      toast.success("Ticket submitted successfully");
+      setTicketSubject("");
+      setTicketDescription("");
+      fetchTickets();
+    } catch (err) {
+      toast.error("Failed to submit ticket");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendMessage = async (ticketId: string) => {
+    if (!replyMessage) return;
+    try {
+      await api.post(`/tickets/${ticketId}/message`, {
+        message: replyMessage
+      });
+      setReplyMessage("");
+      fetchTickets();
+    } catch (err) {
+      toast.error("Failed to send message");
+    }
   };
 
   return (
@@ -203,7 +240,7 @@ export default function HelpSupportPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">Help & Support</h2>
       </div>
-      
+
       <div className="relative mb-6">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
@@ -213,32 +250,32 @@ export default function HelpSupportPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
-      
+
       <Tabs defaultValue="faq" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger 
-            value="faq" 
+          <TabsTrigger
+            value="faq"
             onClick={() => setActiveTab("faq")}
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             FAQs
           </TabsTrigger>
-          <TabsTrigger 
-            value="support" 
+          <TabsTrigger
+            value="support"
             onClick={() => setActiveTab("support")}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             Support Tickets
           </TabsTrigger>
-          <TabsTrigger 
-            value="resources" 
+          <TabsTrigger
+            value="resources"
             onClick={() => setActiveTab("resources")}
           >
             <BookOpen className="h-4 w-4 mr-2" />
             Resources
           </TabsTrigger>
         </TabsList>
-        
+
         {/* FAQs Tab */}
         <TabsContent value="faq" className="space-y-6">
           {searchQuery && filteredFAQs.length === 0 ? (
@@ -277,7 +314,7 @@ export default function HelpSupportPage() {
               </Card>
             ))
           )}
-          
+
           {!searchQuery && (
             <Card>
               <CardHeader>
@@ -287,15 +324,17 @@ export default function HelpSupportPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setActiveTab("support")}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Contact Support
+                <Button asChild>
+                  <a href="mailto:enquiry@maatramfoundation.com">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Contact Support
+                  </a>
                 </Button>
               </CardContent>
             </Card>
           )}
         </TabsContent>
-        
+
         {/* Support Tickets Tab */}
         <TabsContent value="support" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-3">
@@ -311,12 +350,17 @@ export default function HelpSupportPage() {
                 <form onSubmit={handleSubmitTicket} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="ticket-subject">Subject</Label>
-                    <Input id="ticket-subject" placeholder="Brief description of the issue" />
+                    <Input
+                      id="ticket-subject"
+                      placeholder="Brief description of the issue"
+                      value={ticketSubject}
+                      onChange={(e) => setTicketSubject(e.target.value)}
+                    />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="ticket-category">Category</Label>
-                    <Select>
+                    <Select value={ticketCategory} onValueChange={setTicketCategory}>
                       <SelectTrigger id="ticket-category">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
@@ -329,10 +373,10 @@ export default function HelpSupportPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="ticket-priority">Priority</Label>
-                    <Select>
+                    <Select value={ticketPriority} onValueChange={setTicketPriority}>
                       <SelectTrigger id="ticket-priority">
                         <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
@@ -344,23 +388,25 @@ export default function HelpSupportPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="ticket-description">Description</Label>
-                    <Textarea 
-                      id="ticket-description" 
+                    <Textarea
+                      id="ticket-description"
                       placeholder="Please provide details about the issue you're experiencing"
                       rows={5}
+                      value={ticketDescription}
+                      onChange={(e) => setTicketDescription(e.target.value)}
                     />
                   </div>
-                  
-                  <Button type="submit" className="w-full">
-                    Submit Ticket
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Submitting..." : "Submit Ticket"}
                   </Button>
                 </form>
               </CardContent>
             </Card>
-            
+
             {/* Existing Tickets */}
             <Card className="md:col-span-2">
               <CardHeader>
@@ -372,13 +418,13 @@ export default function HelpSupportPage() {
               <CardContent className="space-y-4">
                 {supportTickets.length > 0 ? (
                   supportTickets.map((ticket) => (
-                    <Card key={ticket.id}>
+                    <Card key={ticket._id || ticket.id}>
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div>
                             <CardTitle className="text-lg">{ticket.subject}</CardTitle>
                             <CardDescription>
-                              Ticket ID: {ticket.id} • {ticket.date}
+                              Ticket ID: {ticket._id || ticket.id} • {ticket.date}
                             </CardDescription>
                           </div>
                           <Badge variant={ticket.status === "open" ? "default" : "secondary"}>
@@ -388,17 +434,16 @@ export default function HelpSupportPage() {
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="space-y-3 max-h-60 overflow-y-auto border rounded-md p-3">
-                          {ticket.messages.map((msg, index) => (
-                            <div 
-                              key={index} 
+                          {ticket.messages.map((msg: any, index: number) => (
+                            <div
+                              key={index}
                               className={`flex ${msg.sender === "You" ? "justify-end" : "justify-start"}`}
                             >
-                              <div 
-                                className={`max-w-[80%] p-3 rounded-lg ${
-                                  msg.sender === "You" 
-                                    ? "bg-primary text-primary-foreground" 
-                                    : "bg-muted"
-                                }`}
+                              <div
+                                className={`max-w-[80%] p-3 rounded-lg ${msg.sender === "You"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                                  }`}
                               >
                                 <div className="text-xs mb-1">
                                   {msg.sender} • {msg.timestamp}
@@ -408,13 +453,17 @@ export default function HelpSupportPage() {
                             </div>
                           ))}
                         </div>
-                        
+
                         {ticket.status === "open" && (
                           <div className="flex items-center space-x-2 mt-4">
-                            <Input placeholder="Type your reply..." />
-                            <Button 
+                            <Input
+                              placeholder="Type your reply..."
+                              value={replyMessage}
+                              onChange={(e) => setReplyMessage(e.target.value)}
+                            />
+                            <Button
                               size="icon"
-                              onClick={() => handleSendMessage(ticket.id, "Sample reply message")}
+                              onClick={() => handleSendMessage(ticket._id || ticket.id)}
                             >
                               <Send className="h-4 w-4" />
                             </Button>
@@ -436,7 +485,7 @@ export default function HelpSupportPage() {
             </Card>
           </div>
         </TabsContent>
-        
+
         {/* Resources Tab */}
         <TabsContent value="resources" className="space-y-6">
           {searchQuery && filteredResources.length === 0 ? (
@@ -451,11 +500,10 @@ export default function HelpSupportPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredResources.map((resource) => (
                 <Card key={resource.id} className="overflow-hidden">
-                  <div className={`h-1 ${
-                    resource.type === "document" ? "bg-blue-500" : 
-                    resource.type === "video" ? "bg-red-500" : 
-                    "bg-green-500"
-                  }`} />
+                  <div className={`h-1 ${resource.type === "document" ? "bg-blue-500" :
+                    resource.type === "video" ? "bg-red-500" :
+                      "bg-green-500"
+                    }`} />
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       {resource.type === "document" && <FileText className="h-5 w-5 mr-2 text-blue-500" />}
@@ -472,18 +520,20 @@ export default function HelpSupportPage() {
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Button variant="outline" className="w-full" asChild>
-                      <a href={resource.link} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Resource
-                      </a>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleViewResource(resource)}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Resource Steps
                     </Button>
                   </CardFooter>
                 </Card>
               ))}
             </div>
           )}
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Request Additional Resources</CardTitle>
@@ -497,7 +547,7 @@ export default function HelpSupportPage() {
                   <Label htmlFor="resource-topic">Topic</Label>
                   <Input id="resource-topic" placeholder="What topic do you need resources for?" />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="resource-type">Resource Type</Label>
                   <Select>
@@ -512,16 +562,16 @@ export default function HelpSupportPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="resource-description">Description</Label>
-                  <Textarea 
-                    id="resource-description" 
+                  <Textarea
+                    id="resource-description"
                     placeholder="Please describe what specific information or training you need"
                     rows={3}
                   />
                 </div>
-                
+
                 <Button type="submit">
                   Submit Request
                 </Button>
@@ -530,6 +580,63 @@ export default function HelpSupportPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isResourceDialogOpen} onOpenChange={setIsResourceDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedResource && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  {selectedResource.type === "document" && <FileText className="h-5 w-5 text-blue-500" />}
+                  {selectedResource.type === "video" && <Video className="h-5 w-5 text-red-500" />}
+                  <Badge variant="outline" className="text-xs">
+                    {selectedResource.type.toUpperCase()}
+                  </Badge>
+                </div>
+                <DialogTitle className="text-2xl">{selectedResource.title}</DialogTitle>
+                <DialogDescription className="text-base mt-2">
+                  {selectedResource.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="mt-6 space-y-6">
+                <h4 className="font-semibold text-lg flex items-center">
+                  <BookOpen className="h-5 w-5 mr-2 text-maatram-blue" />
+                  Implementation Steps
+                </h4>
+                <div className="space-y-4">
+                  {selectedResource.steps.map((step: string, index: number) => (
+                    <div key={index} className="flex gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-maatram-blue/20 transition-all group">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-maatram-blue group-hover:bg-maatram-blue group-hover:text-white transition-colors">
+                        {index + 1}
+                      </div>
+                      <div className="flex-grow pt-1">
+                        <p className="text-gray-700 leading-relaxed font-medium">
+                          {step}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <DialogFooter className="mt-8">
+                <Button className="w-full sm:w-auto" asChild>
+                  <a href={selectedResource.link} target="_blank" rel="noopener noreferrer">
+                    Download/Open Full Resource
+                  </a>
+                </Button>
+                <Button variant="ghost" onClick={() => setIsResourceDialogOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

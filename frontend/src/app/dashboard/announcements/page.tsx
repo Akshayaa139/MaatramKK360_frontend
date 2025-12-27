@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,55 +10,41 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Megaphone, Bell, Calendar, Clock, Users, Plus, Edit, Trash, Eye } from "lucide-react";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 export default function AnnouncementsPage() {
   const [activeTab, setActiveTab] = useState("announcements");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
-  
-  // Sample data for classes
-  const classes = [
-    { id: "all", name: "All Classes" },
-    { id: "1", name: "Advanced Mathematics" },
-    { id: "2", name: "Physics Fundamentals" },
-    { id: "3", name: "Chemistry Lab Preparation" }
-  ];
-  
-  // Sample data for announcements
-  const announcements = [
-    {
-      id: "1",
-      title: "Exam Preparation Materials",
-      message: "I've uploaded additional practice problems for the upcoming mid-term exam. Please review them before our next class.",
-      class: "Advanced Mathematics",
-      date: "2023-11-10",
-      time: "15:30",
-      readCount: 8,
-      totalStudents: 10
-    },
-    {
-      id: "2",
-      title: "Lab Safety Guidelines",
-      message: "Please review the updated lab safety guidelines before our next practical session. Safety goggles and lab coats are mandatory.",
-      class: "Chemistry Lab Preparation",
-      date: "2023-11-08",
-      time: "10:15",
-      readCount: 5,
-      totalStudents: 8
-    },
-    {
-      id: "3",
-      title: "Assignment Deadline Extended",
-      message: "Due to multiple requests, I've extended the deadline for the mechanics problem set to Friday, November 18th.",
-      class: "Physics Fundamentals",
-      date: "2023-11-05",
-      time: "18:20",
-      readCount: 14,
-      totalStudents: 15
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncements();
+    fetchClasses();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      const res = await api.get("/announcements");
+      setAnnouncements(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch announcements", err);
     }
-  ];
-  
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const res = await api.get("/tutor/classes");
+      setClasses(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch classes", err);
+    }
+  };
+
   // Sample data for notifications
   const notifications = [
     {
@@ -98,41 +84,48 @@ export default function AnnouncementsPage() {
       read: true
     }
   ];
-  
-  const handleCreateAnnouncement = () => {
+
+  const handleCreateAnnouncement = async () => {
     if (!title || !message || !selectedClass) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
-    
-    console.log("Creating announcement", {
-      title,
-      message,
-      classId: selectedClass
-    });
-    
-    // Reset form
-    setTitle("");
-    setMessage("");
-    setSelectedClass("");
+
+    try {
+      setIsLoading(true);
+      await api.post("/announcements", {
+        title,
+        message,
+        targetClass: selectedClass === "all" ? undefined : selectedClass
+      });
+      toast.success("Announcement sent successfully");
+      setTitle("");
+      setMessage("");
+      setSelectedClass("");
+      fetchAnnouncements();
+    } catch (err) {
+      toast.error("Failed to send announcement");
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   const handleEditAnnouncement = (id: string) => {
     console.log(`Editing announcement ${id}`);
   };
-  
+
   const handleDeleteAnnouncement = (id: string) => {
     console.log(`Deleting announcement ${id}`);
   };
-  
+
   const handleViewAnnouncement = (id: string) => {
     console.log(`Viewing announcement ${id}`);
   };
-  
+
   const handleMarkAsRead = (id: string) => {
     console.log(`Marking notification ${id} as read`);
   };
-  
+
   const handleDeleteNotification = (id: string) => {
     console.log(`Deleting notification ${id}`);
   };
@@ -140,13 +133,13 @@ export default function AnnouncementsPage() {
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Announcements & Notifications</h2>
-      
+
       <Tabs defaultValue="announcements" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
-        
+
         {/* Announcements Tab */}
         <TabsContent value="announcements" className="space-y-4 mt-4">
           <div className="grid gap-6 md:grid-cols-2">
@@ -169,7 +162,7 @@ export default function AnnouncementsPage() {
                       onChange={(e) => setTitle(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="message">Message</Label>
                     <Textarea
@@ -180,7 +173,7 @@ export default function AnnouncementsPage() {
                       onChange={(e) => setMessage(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="class-select">Select Class</Label>
                     <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -188,15 +181,16 @@ export default function AnnouncementsPage() {
                         <SelectValue placeholder="Select a class" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="all">All Classes</SelectItem>
                         {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
+                          <SelectItem key={cls._id} value={cls._id}>
                             {cls.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <Button type="button" className="w-full" onClick={handleCreateAnnouncement}>
                     <Megaphone className="h-4 w-4 mr-2" />
                     Send Announcement
@@ -204,7 +198,7 @@ export default function AnnouncementsPage() {
                 </form>
               </CardContent>
             </Card>
-            
+
             {/* Recent Announcements */}
             <Card>
               <CardHeader>
@@ -216,24 +210,26 @@ export default function AnnouncementsPage() {
               <CardContent>
                 <div className="space-y-4">
                   {announcements.map((announcement) => (
-                    <Card key={announcement.id} className="overflow-hidden">
+                    <Card key={announcement._id} className="overflow-hidden">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                          <Badge variant="outline">{announcement.class}</Badge>
+                          <Badge variant="outline">
+                            {announcement.class?.title || announcement.class?.subject || "All Classes"}
+                          </Badge>
                         </div>
                         <CardDescription className="flex items-center space-x-4">
                           <span className="flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
-                            {new Date(announcement.date).toLocaleDateString()}
+                            {new Date(announcement.createdAt).toLocaleDateString()}
                           </span>
                           <span className="flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
-                            {announcement.time}
+                            {new Date(announcement.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <span className="flex items-center">
                             <Users className="h-3 w-3 mr-1" />
-                            Read: {announcement.readCount}/{announcement.totalStudents}
+                            Read by: {announcement.readBy?.length || 0}
                           </span>
                         </CardDescription>
                       </CardHeader>
@@ -243,22 +239,22 @@ export default function AnnouncementsPage() {
                         </p>
                       </CardContent>
                       <CardFooter className="flex justify-end space-x-2 pt-0">
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleViewAnnouncement(announcement.id)}
+                          onClick={() => handleViewAnnouncement(announcement._id)}
                         >
                           <Eye className="h-4 w-4 mr-1" /> View
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleEditAnnouncement(announcement.id)}
+                          onClick={() => handleEditAnnouncement(announcement._id)}
                         >
                           <Edit className="h-4 w-4 mr-1" /> Edit
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteAnnouncement(announcement.id)}
                         >
@@ -272,7 +268,7 @@ export default function AnnouncementsPage() {
             </Card>
           </div>
         </TabsContent>
-        
+
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-4 mt-4">
           <Card>
@@ -292,8 +288,8 @@ export default function AnnouncementsPage() {
             <CardContent>
               <div className="space-y-4">
                 {notifications.map((notification) => (
-                  <div 
-                    key={notification.id} 
+                  <div
+                    key={notification.id}
                     className={`flex items-start p-4 border rounded-lg ${notification.read ? 'bg-white' : 'bg-blue-50'}`}
                   >
                     <div className="mr-4">
@@ -330,16 +326,16 @@ export default function AnnouncementsPage() {
                       </p>
                       <div className="flex justify-end space-x-2 mt-2">
                         {!notification.read && (
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleMarkAsRead(notification.id)}
                           >
                             Mark as Read
                           </Button>
                         )}
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteNotification(notification.id)}
                         >

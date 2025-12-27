@@ -17,6 +17,8 @@ const StudyMaterialSchema = new mongoose.Schema(
     url: { type: String },
     filePath: { type: String },
     subjects: [{ type: String }],
+    summary: { type: String },
+    steps: [{ type: String }],
   },
   { timestamps: true }
 );

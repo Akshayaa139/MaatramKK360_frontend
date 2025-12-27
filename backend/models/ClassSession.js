@@ -45,6 +45,10 @@ const ClassSessionSchema = new mongoose.Schema({
     activeParticipants: {
         type: Number,
         default: 0
+    },
+    lastHeartbeat: {
+        type: Date,
+        default: Date.now
     }
 });
 

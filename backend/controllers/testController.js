@@ -48,14 +48,14 @@ const getTests = asyncHandler(async (req, res) => {
 // @route   POST /api/tests
 // @access  Private/Tutor
 const createTest = asyncHandler(async (req, res) => {
-  const { class: classId, title, description, date, duration } = req.body;
+  const { class: classId, title, description, date, duration, questions } = req.body;
   const test = new Test({
     class: classId,
     title,
     description,
     date,
     duration: Number(duration),
-
+    questions: Array.isArray(questions) ? questions : [],
   });
   const created = await test.save();
   res.status(201).json(created);
@@ -65,7 +65,11 @@ const createTest = asyncHandler(async (req, res) => {
 // @route   PUT /api/tests/:testId
 // @access  Private/Tutor
 const updateTest = asyncHandler(async (req, res) => {
-  const { title, description, date, duration } = req.body;
+  const { title, description, date, duration, questions, status } = req.body;
+  console.log('--- UPDATE TEST PAYLOAD ---');
+  console.log('TestID:', req.params.testId);
+  console.log('Questions Count in Payload:', Array.isArray(questions) ? questions.length : 'N/A');
+
   const test = await Test.findById(req.params.testId);
   if (!test) {
     res.status(404);
@@ -75,6 +79,8 @@ const updateTest = asyncHandler(async (req, res) => {
   if (typeof description === 'string') test.description = description;
   if (date) test.date = date;
   if (duration !== undefined) test.duration = Number(duration);
+  if (questions) test.questions = questions;
+  if (status) test.status = status;
 
   const updated = await test.save();
   res.json(updated);
@@ -126,4 +132,45 @@ const getTestsForStudent = asyncHandler(async (req, res) => {
   res.json(tests);
 });
 
-module.exports.getTestsForStudent = getTestsForStudent;
+const submitQuiz = asyncHandler(async (req, res) => {
+  const { marks, answers } = req.body;
+  const test = await Test.findById(req.params.id || req.params.testId);
+  if (!test) {
+    res.status(404);
+    throw new Error('Test not found');
+  }
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  // Check if already submitted
+  const alreadySubmitted = test.submissions.find(s => String(s.student) === String(student._id));
+  if (alreadySubmitted) {
+    alreadySubmitted.marks = marks;
+    alreadySubmitted.answers = answers;
+    alreadySubmitted.submittedAt = Date.now();
+  } else {
+    test.submissions.push({
+      student: student._id,
+      marks,
+      answers,
+      submittedAt: Date.now()
+    });
+  }
+
+  await test.save();
+  res.json({ message: 'Quiz submitted', marks });
+});
+
+module.exports = {
+  getTestStats,
+  getUpcomingTests,
+  getTests,
+  createTest,
+  updateTest,
+  deleteTest,
+  getTestsForStudent,
+  submitQuiz
+};

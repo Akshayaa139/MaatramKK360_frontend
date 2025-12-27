@@ -6,6 +6,8 @@ const baseURL = /\/api$/.test(base) ? base : `${base}/api`;
 
 const api = axios.create({ baseURL });
 
+export const BACKEND_URL = base;
+
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const headersObj = config.headers as unknown as
     | ({ get?: (name: string) => string | undefined } & Record<string, unknown>)

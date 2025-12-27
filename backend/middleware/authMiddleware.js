@@ -36,16 +36,20 @@ const protect = async (req, res, next) => {
 
 // Admin or Lead middleware
 const admin = (req, res, next) => {
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'lead')) {
+  const role = (req.user?.role || "").toLowerCase();
+  console.log(`[DEBUG] Admin middleware check: User=${req.user?.email}, Role=${role}`);
+  if (req.user && (role === 'admin' || role === 'lead')) {
     next();
   } else {
+    console.warn(`[DEBUG] Admin access denied for User=${req.user?.email}, Role=${role}`);
     res.status(401).json({ message: 'Not authorized as an admin/lead' });
   }
 };
 
 // Volunteer only middleware
 const volunteer = (req, res, next) => {
-  if (req.user && (req.user.role === 'volunteer' || req.user.role === 'alumni')) {
+  const role = (req.user?.role || "").toLowerCase();
+  if (req.user && (role === 'volunteer' || role === 'alumni')) {
     next();
   } else {
     res.status(401).json({ message: 'Not authorized as a volunteer' });
@@ -55,7 +59,11 @@ const volunteer = (req, res, next) => {
 // Role-based access control middleware
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const userRole = (req.user.role || "").toLowerCase();
+    const authorizedRoles = roles.map(r => r.toLowerCase());
+
+    if (!authorizedRoles.includes(userRole)) {
+      console.warn(`Access Denied: Role '${userRole}' not in [${authorizedRoles.join(', ')}]`);
       return res.status(403).json({
         message: `User role ${req.user.role} is not authorized to access this route`
       });
