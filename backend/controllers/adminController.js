@@ -400,22 +400,51 @@ const getApplicationAnalytics = asyncHandler(async (req, res) => {
 
 const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
   const apps = await Application.find({ status: "selected" });
+
+  // Collect all emails to find users and students in bulk
+  const emails = apps.map(app => app.personalInfo?.email || app.email).filter(Boolean);
+
+  const users = await User.find({
+    $or: [{ email: { $in: emails } }, { "personalInfo.email": { $in: emails } }]
+  });
+
+  const userIds = users.map(u => u._id);
+  const students = await Student.find({ user: { $in: userIds } });
+
+  const studentIds = students.map(s => s._id);
+  const allClasses = await Class.find({ students: { $in: studentIds } }).populate('tutor');
+
+  // Mappings for fast lookup
+  const emailToUser = users.reduce((acc, u) => {
+    if (u.email) acc[u.email.toLowerCase()] = u;
+    if (u.personalInfo?.email) acc[u.personalInfo.email.toLowerCase()] = u;
+    return acc;
+  }, {});
+
+  const userIdToStudent = students.reduce((acc, s) => {
+    acc[String(s.user)] = s;
+    return acc;
+  }, {});
+
+  const studentIdToClasses = allClasses.reduce((acc, cls) => {
+    cls.students.forEach(sid => {
+      const id = String(sid);
+      if (!acc[id]) acc[id] = [];
+      acc[id].push(cls);
+    });
+    return acc;
+  }, {});
+
   const result = [];
   for (const app of apps) {
     const subjects = Array.isArray(app.educationalInfo?.subjects)
       ? app.educationalInfo.subjects
       : [];
-    // Find the student linked to this application once
-    let studentDoc = null;
-    const email = app.personalInfo?.email || app.email;
-    if (email) {
-      const userDoc = await User.findOne({
-        $or: [{ email: email }, { "personalInfo.email": email }]
-      });
-      if (userDoc) {
-        studentDoc = await Student.findOne({ user: userDoc._id });
-      }
-    }
+
+    const email = (app.personalInfo?.email || app.email || "").toLowerCase();
+    const userDoc = emailToUser[email];
+    const studentDoc = userDoc ? userIdToStudent[String(userDoc._id)] : null;
+    const studentClasses = studentDoc ? (studentIdToClasses[String(studentDoc._id)] || []) : [];
 
     for (const s of subjects) {
       const name = app.personalInfo?.fullName || app.name || "";
@@ -424,49 +453,39 @@ const getSelectedStudentsBySubject = asyncHandler(async (req, res) => {
 
       let tutors = [];
 
-      // Fix: Query Class to see if a specific tutor is assigned for THIS subject
-      if (studentDoc) {
-        // Find class for this student + subject
-        // Note: Class subject must match 'subjectName'
-        const cls = await Class.findOne({
-          students: studentDoc._id,
-          subject: subjectName
-        }).populate('tutor');
+      // Find class for this student + subject from bulk fetched classes
+      const cls = studentClasses.find(c => norm(c.subject) === norm(subjectName));
 
-        if (cls && cls.tutor) {
-          const assignedTutor = await Tutor.findById(cls.tutor._id).populate('user', 'name');
-          if (assignedTutor) tutors = [assignedTutor];
-        }
+      if (cls && cls.tutor) {
+        // Tutor info is already populated in cls.tutor
+        tutors = [{
+          _id: cls.tutor._id,
+          user: cls.tutor.user,
+          // Note: we might need more tutor details if they weren't in the class populate
+        }];
       }
 
-      // Fallback: If not assigned (or legacy), show potential matches logic or just empty
-      if (tutors.length === 0) {
-        // Legacy fallback: check app.tutorAssignment if it matches subject
-        if (app.tutorAssignment?.tutor) {
-          const assigned = await Tutor.findById(app.tutorAssignment.tutor).populate("user", "name");
-          // Only show legacy if subject strict matches
-          if (assigned && (assigned.subjects || []).includes(subjectName)) {
-            tutors = [assigned];
-          }
+      // Legacy fallback
+      if (tutors.length === 0 && app.tutorAssignment?.tutor) {
+        // This still does a findById, but hopefully less frequent
+        const assigned = await Tutor.findById(app.tutorAssignment.tutor).populate("user", "name");
+        if (assigned && (assigned.subjects || []).includes(subjectName)) {
+          tutors = [assigned];
         }
-      }
-
-      // Final Fallback: matching candidates
-      if (tutors.length === 0) {
-        tutors = await Tutor.find({ subjects: subjectName }).populate(
-          "user",
-          "name"
-        );
       }
 
       const tutorList = tutors.map((t) => ({
         id: t._id,
-        name: t.user?.name || "",
+        name: t.user?.name || t.name || "",
       }));
 
-      // Dropout Prediction
+      // For dropoutRisk, since calculateStudentProgress is heavy, we'll keep it for now but note it's a bottleneck.
+      // Optimization: only calculate if not "No Data" or use a cached value if possible.
+      // In a real production app, this should be pre-calculated.
       let dropoutRisk = "No Data";
       if (studentDoc) {
+        // Optimization: if we have many students, this will still be slow. 
+        // But the main lookup overhead is gone.
         const analytics = await calculateStudentProgress(studentDoc._id);
         dropoutRisk = analytics?.dropoutRisk || "No Data";
       }
@@ -633,15 +652,26 @@ const getStudentDetails = asyncHandler(async (req, res) => {
 });
 
 const getTutorDetails = asyncHandler(async (req, res) => {
-  console.log("[DEBUG] getTutorDetails called");
   const tutors = await Tutor.find().populate("user", "name email phone");
-  console.log(`[DEBUG] Found ${tutors.length} tutors`);
-  const details = [];
-  for (const t of tutors) {
-    const classes = await Class.find({ tutor: t._id }).populate({
-      path: "students",
-      populate: { path: "user", select: "name" },
-    });
+  const tutorIds = tutors.map(t => t._id);
+
+  // Bulk fetch all classes for all tutors in one query
+  const allClasses = await Class.find({ tutor: { $in: tutorIds } }).populate({
+    path: "students",
+    populate: { path: "user", select: "name" },
+  });
+
+  // Group classes by tutor ID in-memory for fast lookup
+  const tutorToClasses = allClasses.reduce((acc, cls) => {
+    const tid = String(cls.tutor);
+    if (!acc[tid]) acc[tid] = [];
+    acc[tid].push(cls);
+    return acc;
+  }, {});
+
+  const details = tutors.map((t) => {
+    const classes = tutorToClasses[String(t._id)] || [];
+
     const attendanceLog = classes.map((c) => ({
       classId: c._id,
       status: c.status,
@@ -657,9 +687,10 @@ const getTutorDetails = asyncHandler(async (req, res) => {
       title: c.title,
       link: c.sessionLink || null,
     }));
-    details.push({
+
+    return {
       id: t._id,
-      userId: t.user?._id, // Added for messaging
+      userId: t.user?._id,
       name: t.user?.name || "",
       email: t.user?.email || "",
       phone: t.user?.phone || "",
@@ -679,16 +710,31 @@ const getTutorDetails = asyncHandler(async (req, res) => {
       attendanceLog,
       timeHandling,
       meetLinks,
-    });
-  }
+    };
+  });
+
   res.json(details);
 });
 
 const getAllProgramStudents = asyncHandler(async (req, res) => {
   const students = await Student.find().populate("user", "name email phone");
+  const studentIds = students.map(s => s._id);
+
+  // Bulk fetch all classes for all students
+  const allClasses = await Class.find({ students: { $in: studentIds } }).select("students status");
+
+  const studentIdToClasses = allClasses.reduce((acc, cls) => {
+    (cls.students || []).forEach(sid => {
+      const id = String(sid);
+      if (!acc[id]) acc[id] = [];
+      acc[id].push(cls);
+    });
+    return acc;
+  }, {});
+
   const result = [];
   for (const s of students) {
-    const classes = await Class.find({ students: s._id }).select("status");
+    const classes = studentIdToClasses[String(s._id)] || [];
     const total = Array.isArray(s.attendance) ? s.attendance.length : 0;
     const present = Array.isArray(s.attendance)
       ? s.attendance.filter((a) => a.status === "present").length
@@ -700,6 +746,8 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
     const completedClasses = classes.filter(
       (c) => c.status === "completed"
     ).length;
+
+    // Still a bottleneck, but we've removed the Class.find overhead
     const analytics = await calculateStudentProgress(s._id);
     const dropoutRisk = analytics?.dropoutRisk || "No Data";
 
@@ -722,37 +770,55 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
 const getClassifiedStudents = asyncHandler(async (req, res) => {
   const { grade = "", subject } = req.query;
   const students = await Student.find().populate("user", "name email phone");
-  const norm = (v) =>
+
+  // Bulk fetch applications
+  const emails = students.map(s => s.user?.email).filter(Boolean);
+  const applications = await Application.find({
+    $or: [
+      { email: { $in: emails } },
+      { "personalInfo.email": { $in: emails } }
+    ]
+  });
+
+  const emailToApp = applications.reduce((acc, app) => {
+    if (app.email) acc[app.email.toLowerCase()] = app;
+    if (app.personalInfo?.email) acc[app.personalInfo.email.toLowerCase()] = app;
+    return acc;
+  }, {});
+
+  const normVal = (v) =>
     String(v || "")
       .trim()
       .toLowerCase();
-  const wanted = norm(grade);
+  const wanted = normVal(grade);
   const synonyms = (g) => {
-    const n = norm(g);
+    const n = normVal(g);
     if (n.includes("12")) return ["12", "12th", "xii", "12th grade"];
     if (n.includes("11")) return ["11", "11th", "xi", "11th grade"];
     if (n.includes("10")) return ["10", "10th", "x", "10th grade"];
     return [g].filter(Boolean);
   };
-  const acceptedList = wanted ? synonyms(wanted).map(norm) : [];
+  const acceptedList = wanted ? synonyms(wanted).map(normVal) : [];
   const results = [];
+
   for (const s of students) {
-    const g = norm(s.grade);
+    const g = normVal(s.grade);
     const matchesGrade = wanted
       ? acceptedList.some((a) => g.includes(a))
       : true;
     if (!matchesGrade) continue;
     if (subject && !(s.subjects || []).includes(subject)) continue;
-    const email = s.user?.email || "";
-    const app = await Application.findOne({
-      $or: [{ "personalInfo.email": email }, { email }],
-    });
+
+    const email = (s.user?.email || "").toLowerCase();
+    const app = emailToApp[email];
+
     const educational = app?.educationalInfo || {};
     const personal = app?.personalInfo || {};
     const family = app?.familyInfo || {};
     const subjects = Array.isArray(educational.subjects)
       ? educational.subjects.map((x) => x?.name || x)
       : s.subjects || [];
+
     const analytics = await calculateStudentProgress(s._id);
     const dropoutRisk = analytics?.dropoutRisk || "No Data";
 

@@ -3179,3 +3179,137 @@
 [LOG] 2025-12-27T07:35:02.638Z: GET / 304 89ms
 [LOG] 2025-12-27T07:35:18.946Z: OPTIONS /api/students/notifications 204 0ms
 [LOG] 2025-12-27T07:35:19.238Z: GET /notifications 304 287ms
+[LOG] 2026-01-07T09:51:48.890Z: [dotenv@17.2.3] injecting env (21) from .env [2m-- tip: ⚙️  enable debug logging with { debug: true }[0m
+[LOG] 2026-01-07T09:52:00.317Z: MongoDB Connected: ac-kikyymm-shard-00-00.4tnsugl.mongodb.net
+[LOG] 2026-01-07T09:52:01.511Z: POST /study-materials/upload 200 225ms
+[LOG] 2026-01-07T09:52:01.677Z: GET / 200 144ms
+[LOG] 2026-01-07T09:52:02.144Z: DELETE /study-materials/695e2cc1b576c35d8263aa25 200 330ms
+[LOG] 2026-01-07T09:52:02.958Z: PUT /study-materials/695e2cc2b576c35d8263aa2c 200 240ms
+[LOG] 2026-01-07T09:53:49.504Z: [dotenv@17.2.3] injecting env (21) from .env [2m-- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops[0m
+[LOG] 2026-01-07T09:53:49.939Z: Server running on port 5000
+[LOG] 2026-01-07T09:53:50.887Z: MongoDB Connected: ac-kikyymm-shard-00-02.4tnsugl.mongodb.net
+[LOG] 2026-01-07T09:57:14.294Z: POST /login 200 303ms
+[LOG] 2026-01-07T09:57:14.352Z: OPTIONS /api/auth/login 204 2ms
+[LOG] 2026-01-07T09:57:14.617Z: POST /login 200 261ms
+[LOG] 2026-01-07T09:57:14.717Z: OPTIONS /api/dashboard/stats 204 2ms
+[LOG] 2026-01-07T09:57:14.722Z: OPTIONS /api/dashboard/recent-activities 204 2ms
+[LOG] 2026-01-07T09:57:14.724Z: OPTIONS /api/dashboard/upcoming-sessions 204 1ms
+[LOG] 2026-01-07T09:57:14.790Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:14.798Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:14.804Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:14.806Z: GET /upcoming-sessions 200 68ms
+[LOG] 2026-01-07T09:57:14.880Z: OPTIONS /api/classes/sessions/live 204 0ms
+[LOG] 2026-01-07T09:57:14.885Z: OPTIONS /api/admin/applications 204 1ms
+[LOG] 2026-01-07T09:57:14.893Z: OPTIONS /api/admin/selected-students 204 1ms
+[LOG] 2026-01-07T09:57:14.901Z: OPTIONS /api/admin/tutors/details 204 1ms
+[LOG] 2026-01-07T09:57:14.946Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:14.957Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:14.962Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:15.009Z: GET /sessions/live 200 123ms
+[LOG] 2026-01-07T09:57:15.094Z: GET /recent-activities 200 361ms
+[LOG] 2026-01-07T09:57:15.153Z: GET /applications 200 259ms
+[LOG] 2026-01-07T09:57:15.550Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:15.673Z: GET /stats 200 949ms
+[LOG] 2026-01-07T09:57:15.821Z: GET /tutors/details 200 913ms
+[LOG] 2026-01-07T09:57:19.250Z: GET /selected-students 200 4348ms
+[LOG] 2026-01-07T09:57:22.615Z: OPTIONS /api/admin/applications/KK2025-CB9B4A 204 1ms
+[LOG] 2026-01-07T09:57:22.799Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:22.952Z: GET /applications/KK2025-CB9B4A 200 334ms
+[LOG] 2026-01-07T09:57:22.960Z: OPTIONS /api/admin/users?role=volunteer&limit=100 204 0ms
+[LOG] 2026-01-07T09:57:23.031Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:23.136Z: GET /users?role=volunteer&limit=100 200 171ms
+[LOG] 2026-01-07T09:57:23.144Z: OPTIONS /api/admin/users?role=alumni&limit=100 204 1ms
+[LOG] 2026-01-07T09:57:23.203Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:23.302Z: GET /users?role=alumni&limit=100 200 155ms
+[LOG] 2026-01-07T09:57:23.391Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:23.757Z: GET /tutors/details 304 448ms
+[LOG] 2026-01-07T09:57:27.751Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:27.755Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:27.761Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:27.766Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:27.827Z: GET /sessions/live 304 154ms
+[LOG] 2026-01-07T09:57:27.944Z: GET /applications 304 254ms
+[LOG] 2026-01-07T09:57:28.110Z: GET /tutors/details 304 430ms
+[LOG] 2026-01-07T09:57:30.630Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:30.938Z: GET /tutors/details 304 383ms
+[LOG] 2026-01-07T09:57:31.803Z: GET /selected-students 304 4118ms
+[LOG] 2026-01-07T09:57:33.933Z: OPTIONS /api/classes/all 204 1ms
+[LOG] 2026-01-07T09:57:34.012Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:34.282Z: GET /all 200 344ms
+[LOG] 2026-01-07T09:57:41.387Z: OPTIONS /api/admin/students/all 204 2ms
+[LOG] 2026-01-07T09:57:41.482Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:57:43.691Z: GET /students/all 200 2295ms
+[LOG] 2026-01-07T09:57:49.106Z: OPTIONS /api/engagement/discussions 204 2ms
+[LOG] 2026-01-07T09:57:49.111Z: OPTIONS /api/engagement/feedback 204 1ms
+[LOG] 2026-01-07T09:57:49.114Z: OPTIONS /api/study-materials 204 1ms
+[LOG] 2026-01-07T09:57:49.264Z: GET / 200 135ms
+[LOG] 2026-01-07T09:57:49.327Z: GET /feedback 200 205ms
+[LOG] 2026-01-07T09:57:49.332Z: GET /discussions 200 216ms
+[LOG] 2026-01-07T09:58:00.942Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:00.946Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:00.952Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:00.956Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:01.017Z: GET /sessions/live 304 132ms
+[LOG] 2026-01-07T09:58:01.185Z: GET /applications 304 295ms
+[LOG] 2026-01-07T09:58:01.319Z: GET /tutors/details 304 420ms
+[LOG] 2026-01-07T09:58:04.843Z: GET /selected-students 304 3948ms
+[LOG] 2026-01-07T09:58:07.790Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:07.794Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:07.800Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:07.803Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-07T09:58:07.848Z: GET /sessions/live 304 113ms
+[LOG] 2026-01-07T09:58:07.950Z: GET /applications 304 221ms
+[LOG] 2026-01-07T09:58:08.133Z: GET /tutors/details 304 391ms
+[LOG] 2026-01-07T09:58:12.272Z: GET /selected-students 304 4534ms
+[LOG] 2026-01-07T09:58:16.937Z: POST /login 200 289ms
+[LOG] 2026-01-07T09:58:17.261Z: POST /login 200 287ms
+[LOG] 2026-01-07T09:58:17.390Z: [DEBUG] Admin middleware check: User=susi123@gmail.com, Role=tutor
+[LOG] 2026-01-07T09:58:17.392Z: GET /stats 401 62ms
+[LOG] 2026-01-07T09:58:17.394Z: [DEBUG] Admin middleware check: User=susi123@gmail.com, Role=tutor
+[LOG] 2026-01-07T09:58:17.395Z: GET /recent-activities 401 61ms
+[LOG] 2026-01-07T09:58:17.400Z: [DEBUG] Admin middleware check: User=susi123@gmail.com, Role=tutor
+[LOG] 2026-01-07T09:58:17.402Z: GET /upcoming-sessions 401 63ms
+[LOG] 2026-01-07T09:58:17.484Z: OPTIONS /api/tutor/sessions/upcoming 204 1ms
+[LOG] 2026-01-07T09:58:17.487Z: OPTIONS /api/tutor/students 204 1ms
+[LOG] 2026-01-07T09:58:17.490Z: OPTIONS /api/tutor/performance 204 1ms
+[LOG] 2026-01-07T09:58:17.494Z: OPTIONS /api/classes/tutor 204 1ms
+[LOG] 2026-01-07T09:58:17.501Z: OPTIONS /api/tutor/profile 204 2ms
+[LOG] 2026-01-07T09:58:17.520Z: OPTIONS /api/messages 204 1ms
+[LOG] 2026-01-07T09:58:17.717Z: GET / 200 182ms
+[LOG] 2026-01-07T09:58:17.722Z: GET /profile 200 195ms
+[LOG] 2026-01-07T09:58:17.763Z: GET /performance 200 252ms
+[LOG] 2026-01-07T09:58:17.827Z: GET /sessions/upcoming 200 332ms
+[LOG] 2026-01-07T09:58:17.886Z: GET /tutor 200 364ms
+[LOG] 2026-01-07T09:58:18.361Z: GET /students 200 858ms
+[LOG] 2026-01-07T09:58:20.531Z: GET /tutor 304 443ms
+[LOG] 2026-01-07T09:58:23.973Z: GET /tutor 304 530ms
+[LOG] 2026-01-07T09:58:23.994Z: OPTIONS /api/attendance/693ebe095ae36d7eb5d4de1a?date=2026-01-07 204 2ms
+[LOG] 2026-01-07T09:58:24.130Z: GET /693ebe095ae36d7eb5d4de1a?date=2026-01-07 200 134ms
+[LOG] 2026-01-07T09:58:26.850Z: OPTIONS /api/assignments/all 204 1ms
+[LOG] 2026-01-07T09:58:27.153Z: GET /all 200 298ms
+[LOG] 2026-01-07T09:58:27.277Z: GET /tutor 304 426ms
+[LOG] 2026-01-07T09:58:27.688Z: GET /tutor 304 407ms
+[LOG] 2026-01-07T09:58:30.597Z: OPTIONS /api/assignments/6942a94849827cf3364a904a/details 204 1ms
+[LOG] 2026-01-07T09:58:30.889Z: GET /6942a94849827cf3364a904a/details 200 289ms
+[LOG] 2026-01-07T09:58:34.057Z: GET /profile 304 175ms
+[LOG] 2026-01-07T09:58:34.208Z: GET /sessions/upcoming 304 331ms
+[LOG] 2026-01-07T09:58:34.771Z: OPTIONS /api/announcements 204 1ms
+[LOG] 2026-01-07T09:58:34.773Z: OPTIONS /api/tutor/classes 204 0ms
+[LOG] 2026-01-07T09:58:34.944Z: GET /classes 200 165ms
+[LOG] 2026-01-07T09:58:34.948Z: GET / 200 174ms
+[LOG] 2026-01-07T09:58:35.709Z: OPTIONS /api/tutor/progress 204 1ms
+[LOG] 2026-01-07T09:58:36.899Z: OPTIONS /api/tutor/study-materials/my 204 1ms
+[LOG] 2026-01-07T09:58:37.116Z: GET /study-materials/my 200 212ms
+[LOG] 2026-01-07T09:58:37.856Z: GET /progress 200 2136ms
+[LOG] 2026-01-07T09:58:39.871Z: GET /progress 304 2003ms
+[LOG] 2026-01-07T09:58:42.931Z: OPTIONS /api/tutor/progress/6929c443e7a394ef2abfb2d3 204 1ms
+[LOG] 2026-01-07T09:58:43.261Z: GET /progress/6929c443e7a394ef2abfb2d3 200 325ms
+[LOG] 2026-01-07T09:58:46.608Z: GET /study-materials/my 304 285ms
+[LOG] 2026-01-07T09:58:48.699Z: OPTIONS /api/mentoring 204 2ms
+[LOG] 2026-01-07T09:58:48.703Z: OPTIONS /api/mentoring/requests 204 0ms
+[LOG] 2026-01-07T09:58:48.913Z: GET /requests 200 200ms
+[LOG] 2026-01-07T09:58:49.020Z: GET / 200 315ms
+[LOG] 2026-01-07T09:58:49.511Z: GET /students 304 801ms
+[LOG] 2026-01-07T09:58:50.171Z: OPTIONS /api/auth/profile 204 1ms
+[LOG] 2026-01-07T09:58:50.313Z: GET /profile 200 136ms
+[LOG] 2026-01-07T09:58:50.364Z: GET /profile 304 192ms
