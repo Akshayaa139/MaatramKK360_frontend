@@ -21,14 +21,20 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   const pendingApplications = await Application.countDocuments({
     status: "pending",
   });
-  const approvedApplications = await Application.countDocuments({
-    status: "approved",
+  // Fix: "approved" is not in enum, used "selected"
+  const selectedApplications = await Application.countDocuments({
+    status: "selected",
   });
+  const approvedApplications = selectedApplications; // Alias for backward compatibility
   const rejectedApplications = await Application.countDocuments({
     status: "rejected",
   });
+  // Tele-verification status from Application
+  const teleVerificationApplications = await Application.countDocuments({
+    status: "tele-verification",
+  });
 
-  // Tele-verification statistics
+  // Tele-verification statistics (from Televerification model)
   const totalTeleverifications = await Televerification.countDocuments();
   const pendingTeleverifications = await Televerification.countDocuments({
     status: "Pending",
@@ -64,8 +70,10 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     // Application stats
     totalApplications,
     pendingApplications,
+    selectedApplications,
     approvedApplications,
     rejectedApplications,
+    teleVerificationApplications,
     // Tele-verification stats
     totalTeleverifications,
     pendingTeleverifications,

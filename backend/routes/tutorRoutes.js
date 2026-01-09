@@ -460,42 +460,29 @@ router.post("/automap", protect, authorize("tutor"), async (req, res) => {
 router.get("/progress", protect, authorize("tutor", "admin", "lead"), async (req, res) => {
   try {
     let tutor = null;
-
-    // If admin/lead, they can see everything or we might need to filter.
-    // For now, if admin/lead, we might want to return ALL students or just return properly.
-    // However, the current logic relies on "classes found for this tutor". 
-    // If admin is viewing, maybe they want to see ALL students?
-    // Let's first check if the user is a tutor.
     if (req.user.role === 'tutor') {
       tutor = await getTutorForUser(req.user._id);
       if (!tutor) return res.json([]);
-    } else {
-      // Admin/Lead: Return progress for all students or handle differently.
-      // For simplicity in this fix, we will allow them to fetch ALL students progress
-      // OR we can fetch all classes if no tutor filter is applied.
-
-      // Strategy: Fetch all students directly for Admin/Lead
-      console.log(`[DEBUG] Admin/Lead accessing progress: ${req.user.role}`);
     }
 
-    // Logic split:
-    // If Tutor: Filter by Tutor's classes
-    // If Admin/Lead: Fetch ALL students
-
     let studentDocs = [];
+    let allClasses, allAssignments, allTests;
 
     if (tutor) {
-      // 1. Get all classes for this tutor
-      const classes = await Class.find({ tutor: tutor._id }).select("title subject");
-      const classIds = classes.map((c) => c._id);
-
-      // 2. Find all students in these classes
+      // Tutor path: Filter by tutor's classes
       const classDocs = await Class.find({ tutor: tutor._id }).populate({
         path: "students",
         populate: { path: "user", select: "name email" },
       });
 
-      // Unique students map
+      const studentIds = classDocs.flatMap(c => (c.students || []).map(s => s._id));
+
+      [allAssignments, allTests] = await Promise.all([
+        require("../models/Assignment").find({ class: { $in: classDocs.map(c => c._id) } }),
+        require("../models/Test").find({ class: { $in: classDocs.map(c => c._id) } })
+      ]);
+      allClasses = classDocs;
+
       const studentMap = new Map();
       for (const c of classDocs) {
         for (const s of c.students || []) {
@@ -510,17 +497,21 @@ router.get("/progress", protect, authorize("tutor", "admin", "lead"), async (req
           }
         }
       }
-
-      // Convert map values to array for processing
       studentDocs = Array.from(studentMap.values());
     } else {
-      // Admin/Lead - Fetch all students with basic population
-      // This might be heavy but "progress is lagging" anyway, we need to optimize later.
-      // For now, fix the 403.
+      // Admin/Lead path: Fetch all students
       const allStudents = await Student.find({}).populate('user', 'name email');
+      const studentIds = allStudents.map(s => s._id);
+
+      [allClasses, allAssignments, allTests] = await Promise.all([
+        Class.find({ students: { $in: studentIds } }),
+        require("../models/Assignment").find({}),
+        require("../models/Test").find({})
+      ]);
+
       studentDocs = allStudents.map(s => ({
         doc: s,
-        classes: ["General"], // Admins see all
+        classes: ["General"],
         classId: null
       }));
     }
@@ -528,13 +519,19 @@ router.get("/progress", protect, authorize("tutor", "admin", "lead"), async (req
     const { calculateStudentProgress } = require("../services/studentAnalyticsService");
     const results = [];
 
-    // Process students
     for (const data of studentDocs) {
       const s = data.doc;
       if (!s) continue;
 
       const sid = String(s._id);
-      const analytics = await calculateStudentProgress(sid);
+      const studentClasses = allClasses.filter(c => (c.students || []).some(id => String(id) === sid));
+
+      const analytics = await calculateStudentProgress(sid, {
+        classes: studentClasses,
+        assignments: allAssignments,
+        tests: allTests
+      });
+
       if (analytics) {
         results.push({
           id: sid,

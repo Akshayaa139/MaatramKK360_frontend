@@ -30,6 +30,7 @@ type ClassItem = {
   subject?: string;
   schedule?: { day?: string; startTime?: string; endTime?: string };
   sessionLink?: string;
+  isLive?: boolean;
 };
 
 const QUOTES = [
@@ -191,6 +192,59 @@ export default function StudentDashboard() {
         description: "Failed to save quiz.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Live Session Polling
+  const [liveSessions, setLiveSessions] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Initial check
+    checkLiveSessions();
+
+    const interval = setInterval(() => {
+      checkLiveSessions();
+    }, 10000); // Poll every 10s
+
+    return () => clearInterval(interval);
+  }, [classes]); // Re-run if classes list changes (to map titles correctly)
+
+  const checkLiveSessions = async () => {
+    try {
+      const res = await api.get<{ sessionId: string, classId: string, title: string, sessionLink: string }[]>("/students/classes/live");
+      const currentLive = res.data;
+      const currentLiveIds = new Set(currentLive.map(s => s.classId));
+
+      setLiveSessions(prev => {
+        // Check for new sessions
+        currentLive.forEach(s => {
+          if (!prev.has(s.classId)) {
+            // New session started!
+            toast({
+              title: "Class Started! 🔴",
+              description: `Your ${s.title} class is now live. Click to join!`,
+              action: (
+                <Button variant="default" size="sm" onClick={() => window.open(s.sessionLink, "_blank")}>
+                  Join Now
+                </Button>
+              ),
+              duration: 10000,
+            });
+            // Also play sound if possible (optional, browser rules apply)
+          }
+        });
+        return currentLiveIds;
+      });
+
+      // Update local classes state to reflect live status visually
+      setClasses(prevClasses => prevClasses.map(c => ({
+        ...c,
+        isLive: currentLiveIds.has(c.id),
+        sessionLink: currentLive.find(l => l.classId === c.id)?.sessionLink || c.sessionLink
+      })));
+
+    } catch (e) {
+      console.error("Polling error", e);
     }
   };
 
@@ -447,8 +501,11 @@ export default function StudentDashboard() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             {classes.map((cls) => (
-              <div key={cls.id} className="p-4 border rounded-xl hover:shadow-md transition-all bg-white">
-                <div className="font-semibold text-lg text-slate-800">{cls.title || "Class"}</div>
+              <div key={cls.id} className={`p-4 border rounded-xl hover:shadow-md transition-all bg-white ${cls.isLive ? 'border-red-400 ring-1 ring-red-400' : ''}`}>
+                <div className="font-semibold text-lg text-slate-800 flex items-center justify-between">
+                  {cls.title || "Class"}
+                  {cls.isLive && <Badge variant="destructive" className="animate-pulse px-1.5 py-0 text-[10px]">LIVE</Badge>}
+                </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Users className="h-4 w-4" />
@@ -461,13 +518,15 @@ export default function StudentDashboard() {
                 </div>
                 <div className="mt-4 pt-4 border-t">
                   {cls.sessionLink ? (
-                    <Button variant="outline" size="sm" className="w-full" onClick={(e) => {
-                      e.preventDefault();
-                      // Import useRouter inside component if needed, or window.location for now if easier, 
-                      // but better to use next/navigation
-                      window.location.href = `/dashboard/meeting/${cls.id}`;
-                    }}>
-                      <Link2 className="h-3 w-3 mr-2" /> Join Class
+                    <Button
+                      variant={cls.isLive ? "default" : "outline"}
+                      size="sm"
+                      className={`w-full ${cls.isLive ? "bg-red-600 hover:bg-red-700" : ""}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.open(cls.sessionLink, "_blank");
+                      }}>
+                      <Link2 className="h-3 w-3 mr-2" /> {cls.isLive ? "Join Live Class" : "Join Class"}
                     </Button>
                   ) : (
                     <Badge variant="secondary" className="w-full justify-center py-1">No link available</Badge>

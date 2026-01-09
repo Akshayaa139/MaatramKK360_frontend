@@ -111,6 +111,12 @@ export default function AdminDashboard() {
   const [filteredApplications, setFilteredApplications] = useState<
     Application[]
   >([]);
+  const [dashboardStats, setDashboardStats] = useState<{
+    total: number;
+    underReview: number;
+    teleVerification: number;
+    selected: number;
+  }>({ total: 0, underReview: 0, teleVerification: 0, selected: 0 });
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -153,6 +159,25 @@ export default function AdminDashboard() {
       }
     };
     if (session?.user) fetchLive();
+  }, [session]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get("/dashboard/stats");
+        if (res.data) {
+          setDashboardStats({
+            total: res.data.totalApplications || 0,
+            underReview: res.data.pendingApplications || 0,
+            teleVerification: res.data.teleVerificationApplications || 0,
+            selected: res.data.selectedApplications || 0,
+          });
+        }
+      } catch (e) {
+        console.error("Failed to fetch dashboard stats", e);
+      }
+    };
+    if (session?.user) fetchStats();
   }, [session]);
 
   useEffect(() => {
@@ -323,17 +348,10 @@ export default function AdminDashboard() {
   };
 
   const stats = {
-    total: applications.length,
-    submitted: applications.filter((a) => a.status === "submitted").length,
-    underReview: applications.filter((a) => a.status === "under_review").length,
-    teleVerification: applications.filter(
-      (a) => a.status === "tele_verification"
-    ).length,
-    panelInterview: applications.filter((a) => a.status === "panel_interview")
-      .length,
-    selected: applications.filter((a) => a.status === "selected").length,
-    rejected: applications.filter((a) => a.status === "rejected").length,
-    // waitlist: applications.filter(a => a.status === 'waitlist').length,
+    total: dashboardStats.total,
+    underReview: dashboardStats.underReview,
+    teleVerification: dashboardStats.teleVerification,
+    selected: dashboardStats.selected,
   };
 
   if (isLoading) {
@@ -378,65 +396,73 @@ export default function AdminDashboard() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <Card className="bg-blue-50 border-blue-200 overflow-hidden">
+          <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200 overflow-hidden hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-blue-800">
                 Total Applications
               </CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Users className="h-4 w-4 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-900">
+              <div className="text-3xl font-bold text-blue-900">
                 {stats.total}
               </div>
-              <p className="text-xs text-blue-600">+12% from last month</p>
+              <p className="text-xs text-blue-600 mt-1 font-medium">+12% from last month</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-yellow-50 border-yellow-200 overflow-hidden">
+          <Card className="bg-gradient-to-br from-yellow-50 to-white border-yellow-200 overflow-hidden hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-yellow-800">
                 Under Review
               </CardTitle>
-              <Filter className="h-4 w-4 text-yellow-600" />
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Filter className="h-4 w-4 text-yellow-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-900">
+              <div className="text-3xl font-bold text-yellow-900">
                 {stats.underReview}
               </div>
-              <p className="text-xs text-yellow-600">Awaiting initial review</p>
+              <p className="text-xs text-yellow-600 mt-1 font-medium">Awaiting initial review</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-purple-50 border-purple-200 overflow-hidden">
+          <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-200 overflow-hidden hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-purple-800">
                 Tele-verification
               </CardTitle>
-              <BookOpen className="h-4 w-4 text-purple-600" />
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <BookOpen className="h-4 w-4 text-purple-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-900">
+              <div className="text-3xl font-bold text-purple-900">
                 {stats.teleVerification}
               </div>
-              <p className="text-xs text-purple-600">
+              <p className="text-xs text-purple-600 mt-1 font-medium">
                 Phone screening in progress
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-green-50 border-green-200 overflow-hidden">
+          <Card className="bg-gradient-to-br from-green-50 to-white border-green-200 overflow-hidden hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <CardTitle className="text-sm font-medium text-green-800">
                 Selected
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-900">
+              <div className="text-3xl font-bold text-green-900">
                 {stats.selected}
               </div>
-              <p className="text-xs text-green-600">Successfully admitted</p>
+              <p className="text-xs text-green-600 mt-1 font-medium">Successfully admitted</p>
             </CardContent>
           </Card>
         </div>

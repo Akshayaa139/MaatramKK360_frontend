@@ -5,14 +5,21 @@ const Class = require("../models/Class");
 
 /**
  * Calculates student progress and predicts dropout risk.
+ * @param {string} studentId 
+ * @param {Object} [preFetchedData] - Optional pre-fetched data to avoid N+1 queries
+ * @param {Array} [preFetchedData.classes] 
+ * @param {Array} [preFetchedData.assignments]
+ * @param {Array} [preFetchedData.tests]
  */
-const calculateStudentProgress = async (studentId) => {
+const calculateStudentProgress = async (studentId, preFetchedData = {}) => {
   const student = await Student.findById(studentId).populate('user', 'name');
   if (!student) return { dropoutRisk: "No Student Found" };
 
   const name = student.user?.name || "Student";
-  const classes = await Class.find({ students: studentId });
-  const classIds = classes.map((c) => c._id);
+  
+  // Use pre-fetched data if available, otherwise query
+  const classes = preFetchedData.classes || await Class.find({ students: studentId });
+  const classIds = classes.map((c) => String(c._id));
 
   // 1. Attendance Rate
   const attendance = Array.isArray(student.attendance) ? student.attendance : [];
@@ -21,9 +28,15 @@ const calculateStudentProgress = async (studentId) => {
   const attendanceRate = totalAttendance ? (presentCount / totalAttendance) * 100 : 0;
 
   // 2. Assignment Scores
-  const assignments = await Assignment.find({ class: { $in: classIds } });
-  const assignmentTotal = assignments.length;
-  const submissions = assignments.flatMap(a => (a.submissions || []).filter(s => String(s.student) === String(studentId)));
+  const assignments = preFetchedData.assignments || await Assignment.find({ class: { $in: classIds } });
+  
+  // Filter assignments that belong to the student's classes (if pre-fetched data contains more)
+  const studentAssignments = preFetchedData.assignments 
+    ? assignments.filter(a => classIds.includes(String(a.class)))
+    : assignments;
+
+  const assignmentTotal = studentAssignments.length;
+  const submissions = studentAssignments.flatMap(a => (a.submissions || []).filter(s => String(s.student) === String(studentId)));
   const assignmentCompleted = submissions.length;
 
   let totalAssignmentScore = 0;
@@ -38,9 +51,15 @@ const calculateStudentProgress = async (studentId) => {
   const assignmentAvg = scoredAssignments ? (totalAssignmentScore / scoredAssignments) : 0;
 
   // 3. Test Scores
-  const tests = await Test.find({ class: { $in: classIds } });
-  const testTotal = tests.length;
-  const testSubmissions = tests.flatMap(t => (t.submissions || []).filter(s => String(s.student) === String(studentId)));
+  const tests = preFetchedData.tests || await Test.find({ class: { $in: classIds } });
+  
+  // Filter tests that belong to the student's classes (if pre-fetched data contains more)
+  const studentTests = preFetchedData.tests 
+    ? tests.filter(t => classIds.includes(String(t.class)))
+    : tests;
+
+  const testTotal = studentTests.length;
+  const testSubmissions = studentTests.flatMap(t => (t.submissions || []).filter(s => String(s.student) === String(studentId)));
   const testCompleted = testSubmissions.length;
 
   let totalTestScore = 0;

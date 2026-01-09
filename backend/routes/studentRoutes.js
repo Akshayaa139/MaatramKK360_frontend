@@ -7,6 +7,7 @@ const {
   getMyProgress,
   getStudentNotifications,
   getTutors,
+  getLiveClasses,
 } = require("../controllers/studentController");
 const {
   getAssignmentsForStudent,
@@ -15,6 +16,7 @@ const { getTestsForStudent, submitQuiz } = require("../controllers/testControlle
 const { protect, authorize } = require("../middleware/authMiddleware");
 
 router.get("/profile", protect, authorize("student"), getStudentProfile);
+router.get("/classes/live", protect, authorize("student"), getLiveClasses);
 router.get("/classes", protect, authorize("student"), getMyClasses);
 router.get("/performance", protect, authorize("student"), getMyPerformance);
 router.get("/progress", protect, authorize("student"), getMyProgress);

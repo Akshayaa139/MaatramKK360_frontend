@@ -271,6 +271,45 @@ const getTutors = asyncHandler(async (req, res) => {
   res.json(tutors);
 });
 
+// @desc    Get live classes for the logged-in student
+// @route   GET /api/students/classes/live
+// @access  Private/Student
+const getLiveClasses = asyncHandler(async (req, res) => {
+  const student = await Student.findOne({ user: req.user._id });
+  if (!student) return res.json([]);
+
+  const query = {
+    $or: [{ students: student._id }],
+  };
+  if (student.tutor) {
+    query.$or.push({ tutor: student.tutor });
+  }
+
+  const classes = await Class.find(query).select("_id title subject");
+  if (classes.length === 0) return res.json([]);
+
+  const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+  const liveSessions = await ClassSession.find({
+    class: { $in: classes.map((c) => c._id) },
+    endTime: null,
+    $or: [
+      { lastHeartbeat: { $gte: twoMinutesAgo } },
+      { startTime: { $gte: twoMinutesAgo } },
+    ],
+  }).populate("class", "title subject sessionLink");
+
+  const result = liveSessions.map((s) => ({
+    sessionId: s._id,
+    classId: s.class._id,
+    title: s.class.title,
+    subject: s.class.subject,
+    sessionLink: s.sessionLink || s.class.sessionLink,
+    startTime: s.startTime,
+  }));
+
+  res.json(result);
+});
+
 module.exports = {
   getStudentsPendingPanel,
   getStudentProfile,
@@ -279,4 +318,5 @@ module.exports = {
   getMyProgress,
   getStudentNotifications,
   getTutors,
+  getLiveClasses,
 };

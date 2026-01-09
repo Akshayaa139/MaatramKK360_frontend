@@ -31,6 +31,8 @@ type ClassItem = {
   title?: string;
   subject?: string;
   sessionLink?: string;
+  isLive?: boolean;
+  activeSessionId?: string;
 };
 type Perf = {
   totalStudents: number;
@@ -59,51 +61,93 @@ export default function TutorDashboard() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [error, setError] = useState("");
+  const [joiningClassId, setJoiningClassId] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setError(""); // clear old errors
+      const [s1, s2, s3, s4, tprof, msgs] = await Promise.all([
+        api.get<SessionItem[]>("/tutor/sessions/upcoming"),
+        api.get<StudentItem[]>("/tutor/students"),
+        api.get<Perf>("/tutor/performance"),
+        api.get<ClassItem[]>("/classes/tutor"),
+        api.get<{
+          tutor?: {
+            subjects?: string[];
+            availability?: unknown[];
+            experienceYears?: number;
+          };
+        }>("/tutor/profile"),
+        api.get<Message[]>("/messages"),
+      ]);
+      setUpcoming(Array.isArray(s1.data) ? s1.data : []);
+      setStudents(Array.isArray(s2.data) ? s2.data : []);
+      setPerf(s3.data);
+      setClasses(Array.isArray(s4.data) ? s4.data : []);
+      setMessages(Array.isArray(msgs.data) ? msgs.data : []);
+      const tp = tprof?.data?.tutor || {};
+      const needSubjects =
+        !tp.subjects ||
+        (Array.isArray(tp.subjects) && tp.subjects.length === 0);
+      const needAvailability =
+        !tp.availability ||
+        (Array.isArray(tp.availability) && tp.availability.length === 0);
+      const needExperience =
+        typeof tp.experienceYears !== "number" ||
+        (tp.experienceYears || 0) <= 0;
+      setProfileIncomplete(
+        !!(needSubjects || needAvailability || needExperience)
+      );
+    } catch (err: any) {
+      console.error("Dashboard load error", err);
+      setError("Failed to load dashboard data. Server might be down.");
+    }
+  };
 
   useEffect(() => {
-    // Auth handled by interceptor
-    const load = async () => {
-      try {
-        setError(""); // clear old errors
-        const [s1, s2, s3, s4, tprof, msgs] = await Promise.all([
-          api.get<SessionItem[]>("/tutor/sessions/upcoming"),
-          api.get<StudentItem[]>("/tutor/students"),
-          api.get<Perf>("/tutor/performance"),
-          api.get<ClassItem[]>("/classes/tutor"),
-          api.get<{
-            tutor?: {
-              subjects?: string[];
-              availability?: unknown[];
-              experienceYears?: number;
-            };
-          }>("/tutor/profile"),
-          api.get<Message[]>("/messages"),
-        ]);
-        setUpcoming(Array.isArray(s1.data) ? s1.data : []);
-        setStudents(Array.isArray(s2.data) ? s2.data : []);
-        setPerf(s3.data);
-        setClasses(Array.isArray(s4.data) ? s4.data : []);
-        setMessages(Array.isArray(msgs.data) ? msgs.data : []);
-        const tp = tprof?.data?.tutor || {};
-        const needSubjects =
-          !tp.subjects ||
-          (Array.isArray(tp.subjects) && tp.subjects.length === 0);
-        const needAvailability =
-          !tp.availability ||
-          (Array.isArray(tp.availability) && tp.availability.length === 0);
-        const needExperience =
-          typeof tp.experienceYears !== "number" ||
-          (tp.experienceYears || 0) <= 0;
-        setProfileIncomplete(
-          !!(needSubjects || needAvailability || needExperience)
-        );
-      } catch (err: any) {
-        console.error("Dashboard load error", err);
-        setError("Failed to load dashboard data. Server might be down.");
-      }
-    };
     load();
   }, []);
+
+  const handleStartSession = async (cls: ClassItem) => {
+    setJoiningClassId(cls._id);
+    try {
+      // Call start endpoint
+      const res = await api.post<{ sessionLink: string, sessionId: string, message: string }>(`/classes/${cls._id}/start`, {});
+
+      // Update local state to show as live immediately
+      setClasses(prev => prev.map(c =>
+        c._id === cls._id
+          ? { ...c, isLive: true, activeSessionId: res.data.sessionId, sessionLink: res.data.sessionLink }
+          : c
+      ));
+
+      // Open link
+      if (res.data.sessionLink) {
+        window.open(res.data.sessionLink, "_blank");
+      }
+    } catch (e) {
+      console.error("Failed to start session", e);
+      // Fallback
+      if (cls.sessionLink) window.open(cls.sessionLink, "_blank");
+    } finally {
+      setJoiningClassId(null);
+    }
+  };
+
+  const handleEndSession = async (cls: ClassItem) => {
+    if (!cls.activeSessionId) return;
+    try {
+      await api.post(`/classes/session/${cls.activeSessionId}/log`, { action: 'leave' });
+      // Update local state
+      setClasses(prev => prev.map(c =>
+        c._id === cls._id
+          ? { ...c, isLive: false, activeSessionId: undefined }
+          : c
+      ));
+    } catch (e) {
+      console.error("Failed to end session", e);
+    }
+  };
 
   const isDharshini = String(session?.user?.name || "")
     .toLowerCase()
@@ -291,27 +335,45 @@ export default function TutorDashboard() {
                 className="p-3 border rounded-md flex items-center justify-between"
               >
                 <div>
-                  <div className="font-medium">{c.title}</div>
+                  <div className="font-medium flex items-center gap-2">
+                    {c.title}
+                    {c.isLive && <Badge variant="destructive" className="animate-pulse px-1.5 py-0 text-[10px]">LIVE</Badge>}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {c.subject}
                   </div>
                 </div>
-                {isDharshini ? (
-                  // Hide per-student join links for Dharshini as requested
-                  <Badge variant="secondary">Hidden</Badge>
-                ) : c.sessionLink ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={c.sessionLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
+
+                <div className="flex items-center gap-2">
+                  {!c.isLive ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStartSession(c)}
+                      disabled={joiningClassId === c._id}
                     >
-                      <Link2 className="h-4 w-4 mr-1" /> Join
-                    </a>
-                  </Button>
-                ) : (
-                  <Badge variant="secondary">No link</Badge>
-                )}
+                      {joiningClassId === c._id ? "Starting..." : <><Link2 className="h-4 w-4 mr-1" /> Start Class</>}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => window.open(c.sessionLink, "_blank")}
+                      >
+                        Resume
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleEndSession(c)}
+                      >
+                        End Session
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
             {classes.length === 0 && (
