@@ -729,23 +729,6 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
   const students = await Student.find().populate("user", "name email phone");
   const studentIds = students.map(s => s._id);
 
-<<<<<<< HEAD
-  // Bulk fetch all classes for all students
-  const allClasses = await Class.find({ students: { $in: studentIds } }).select("students status");
-
-  const studentIdToClasses = allClasses.reduce((acc, cls) => {
-    (cls.students || []).forEach(sid => {
-      const id = String(sid);
-      if (!acc[id]) acc[id] = [];
-      acc[id].push(cls);
-    });
-    return acc;
-  }, {});
-
-  const result = [];
-  for (const s of students) {
-    const classes = studentIdToClasses[String(s._id)] || [];
-=======
   // Bulk fetch data
   const [allClasses, allAssignments, allTests] = await Promise.all([
     Class.find({ students: { $in: studentIds } }),
@@ -758,7 +741,6 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
     const studentId = String(s._id);
     const classes = allClasses.filter(c => (c.students || []).some(sid => String(sid) === studentId));
 
->>>>>>> 037b2993 (update)
     const total = Array.isArray(s.attendance) ? s.attendance.length : 0;
     const present = Array.isArray(s.attendance)
       ? s.attendance.filter((a) => a.status === "present").length
@@ -772,17 +754,12 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
       (c) => c.status === "completed"
     ).length;
 
-<<<<<<< HEAD
-    // Still a bottleneck, but we've removed the Class.find overhead
-    const analytics = await calculateStudentProgress(s._id);
-=======
     // Use pre-fetched data for analytics
     const analytics = await calculateStudentProgress(s._id, {
       classes,
       assignments: allAssignments,
       tests: allTests
     });
->>>>>>> 037b2993 (update)
     const dropoutRisk = analytics?.dropoutRisk || "No Data";
 
     result.push({
@@ -804,31 +781,6 @@ const getAllProgramStudents = asyncHandler(async (req, res) => {
 const getClassifiedStudents = asyncHandler(async (req, res) => {
   const { grade = "", subject } = req.query;
   const students = await Student.find().populate("user", "name email phone");
-<<<<<<< HEAD
-
-  // Bulk fetch applications
-  const emails = students.map(s => s.user?.email).filter(Boolean);
-  const applications = await Application.find({
-    $or: [
-      { email: { $in: emails } },
-      { "personalInfo.email": { $in: emails } }
-    ]
-  });
-
-  const emailToApp = applications.reduce((acc, app) => {
-    if (app.email) acc[app.email.toLowerCase()] = app;
-    if (app.personalInfo?.email) acc[app.personalInfo.email.toLowerCase()] = app;
-    return acc;
-  }, {});
-
-  const normVal = (v) =>
-    String(v || "")
-      .trim()
-      .toLowerCase();
-  const wanted = normVal(grade);
-  const synonyms = (g) => {
-    const n = normVal(g);
-=======
   const studentIds = students.map(s => s._id);
 
   const normFunc = (v) =>
@@ -857,39 +809,24 @@ const getClassifiedStudents = asyncHandler(async (req, res) => {
   const wanted = normFunc(grade);
   const synonyms = (g) => {
     const n = normFunc(g);
->>>>>>> 037b2993 (update)
     if (n.includes("12")) return ["12", "12th", "xii", "12th grade"];
     if (n.includes("11")) return ["11", "11th", "xi", "11th grade"];
     if (n.includes("10")) return ["10", "10th", "x", "10th grade"];
     return [g].filter(Boolean);
   };
-<<<<<<< HEAD
-  const acceptedList = wanted ? synonyms(wanted).map(normVal) : [];
-=======
   const acceptedList = wanted ? synonyms(wanted).map(normFunc) : [];
-
->>>>>>> 037b2993 (update)
   const results = [];
 
   for (const s of students) {
-<<<<<<< HEAD
-    const g = normVal(s.grade);
-=======
     const g = normFunc(s.grade);
->>>>>>> 037b2993 (update)
     const matchesGrade = wanted
       ? acceptedList.some((a) => g.includes(a))
       : true;
     if (!matchesGrade) continue;
     if (subject && !(s.subjects || []).includes(subject)) continue;
 
-<<<<<<< HEAD
-    const email = (s.user?.email || "").toLowerCase();
-    const app = emailToApp[email];
-=======
     const email = s.user?.email || "";
     const app = appMap.get(email);
->>>>>>> 037b2993 (update)
 
     const educational = app?.educationalInfo || {};
     const personal = app?.personalInfo || {};
@@ -898,9 +835,6 @@ const getClassifiedStudents = asyncHandler(async (req, res) => {
       ? educational.subjects.map((x) => x?.name || x)
       : s.subjects || [];
 
-<<<<<<< HEAD
-    const analytics = await calculateStudentProgress(s._id);
-=======
     const studentIdStr = String(s._id);
     const studentClasses = allClasses.filter(c => (c.students || []).some(sid => String(sid) === studentIdStr));
 
@@ -909,7 +843,6 @@ const getClassifiedStudents = asyncHandler(async (req, res) => {
       assignments: allAssignments,
       tests: allTests
     });
->>>>>>> 037b2993 (update)
     const dropoutRisk = analytics?.dropoutRisk || "No Data";
 
     results.push({
