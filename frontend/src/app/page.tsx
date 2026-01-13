@@ -4,8 +4,26 @@ import { useLanguage } from "@/app/providers";
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BookOpen, GraduationCap, ArrowRight, FileText, Phone, UserCheck, Calendar, CheckCircle, TrendingUp, MessageSquare } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Users,
+  BookOpen,
+  GraduationCap,
+  ArrowRight,
+  FileText,
+  Phone,
+  UserCheck,
+  Calendar,
+  CheckCircle,
+  TrendingUp,
+  MessageSquare,
+} from "lucide-react";
 
 export default function HomePage() {
   const { language, setLanguage } = useLanguage();
@@ -15,17 +33,30 @@ export default function HomePage() {
       navHome: "Home",
       navWhatWeDo: "What We Do",
       navAdmissions: "Admissions",
-      description: "A comprehensive selection and tutoring program designed to identify and nurture talented students from diverse backgrounds.",
+      description:
+        "A comprehensive selection and tutoring program designed to identify and nurture talented students from diverse backgrounds.",
       navNews: "News & Events",
       navGallery: "Gallery",
       navContact: "Contact Us",
       title: "Karpom Karpippom (KK) Program",
-      heroTitle: "Empowering Dreams Through Education",
-      heroIntro: "At Maatram Foundation, we believe that every student deserves a fair chance to succeed. A comprehensive selection and tutoring program designed to identify and nurture talented students from diverse backgrounds.",
-      heroOfferBullets: ["Graded assignments", "Monthly tests", "Model exams", "Intensive revision sessions"],
+      heroTitleKK: "Karpom Karpippom",
+      heroTitleEmpower: "Empowering Students",
+      heroIntro: "KK begins with empowering students — providing access, guidance, and rigorous support so every learner can thrive. Our comprehensive selection and tutoring program identifies talent and nurtures it with care.",
+      heroOfferBullets: [
+        "Graded assignments",
+        "Monthly tests",
+        "Model exams",
+        "Intensive revision sessions",
+      ],
       heroOfferTitle: "To ensure strong results, we offer:",
       heroDevTitle: "Beyond Academics",
-      heroDevBullets: ["Motivational talks by our alumni", "Career awareness sessions", "Life skills training", "Communication skill development", "One-on-one mentoring"],
+      heroDevBullets: [
+        "Motivational talks by our alumni",
+        "Career awareness sessions",
+        "Life skills training",
+        "Communication skill development",
+        "One-on-one mentoring",
+      ],
       heroSince: "Since 2020, we’ve supported",
       heroSinceTrail: "students across Tamil Nadu, with over",
       heroScholarTrail:
@@ -93,22 +124,38 @@ export default function HomePage() {
       navHome: "முகப்பு",
       navWhatWeDo: "நாங்கள் என்ன செய்கிறோம்",
       navAdmissions: "சேர்க்கை",
-      description: "பல்வேறு பின்னணிகளைக் கொண்ட திறமையான மாணவர்களை அடையாளம் காணவும், வளர்க்கவும் வடிவமைக்கப்பட்ட விரிவான தேர்வு மற்றும் டியூட்டரிங் திட்டம்.",
+      description:
+        "பல்வேறு பின்னணிகளைக் கொண்ட திறமையான மாணவர்களை அடையாளம் காணவும், வளர்க்கவும் வடிவமைக்கப்பட்ட விரிவான தேர்வு மற்றும் டியூட்டரிங் திட்டம்.",
       navNews: "செய்தி & நிகழ்வுகள்",
       navGallery: "கேலரி",
       navContact: "தொடர்பு",
       title: "கற்போம் கற்பிப்போம் (கே.கே) திட்டம்",
-      heroTitle: "கல்வி மூலம் கனவுகளை நனவாக்குதல்",
-      heroIntro: "மாற்றம் அறக்கட்டளையில், ஒவ்வொரு மாணவரும் வெற்றி பெற சம வாய்ப்பு பெற வேண்டும் என்று நாங்கள் நம்புகிறோம். பல்வேறு பின்னணிகளைக் கொண்ட திறமையான மாணவர்களை அடையாளம் காணவும், வளர்க்கவும் வடிவமைக்கப்பட்ட விரிவான தேர்வு மற்றும் டியூட்டரிங் திட்டம்.",
-      heroOfferBullets: ["தரமதிப்பிடப்பட்ட பணிகள்", "மாதாந்திர தேர்வுகள்", "மாதிரித் தேர்வுகள்", "தீவிர மறுபயிற்சி அமர்வுகள்"],
+      heroTitleKK: "கற்போம் கற்பிப்போம்",
+      heroTitleEmpower: "மாணவர்களை வலுப்படுத்துதல்",
+      heroIntro: "கே.கே திட்டம் மாணவர்களை வலுப்படுத்துவதிலிருந்து தொடங்குகிறது — அணுகல், வழிகாட்டல் மற்றும் உறுதியான ஆதரவுடன் ஒவ்வொரு கற்றவரும் வளரத் தயாராக. எங்கள் விரிவான தேர்வு மற்றும் டியூட்டரிங் திட்டம் திறமையை அடையாளம் கண்டு பராமரிக்கிறது.",
+      heroOfferBullets: [
+        "தரமதிப்பிடப்பட்ட பணிகள்",
+        "மாதாந்திர தேர்வுகள்",
+        "மாதிரித் தேர்வுகள்",
+        "தீவிர மறுபயிற்சி அமர்வுகள்",
+      ],
       heroOfferTitle: "வலுவான முடிவுகளுக்காக, நாங்கள் வழங்குவது:",
       heroDevTitle: "கல்விக்கு அப்பால்",
-      heroDevBullets: ["எங்கள் பழைய மாணவர்கள் வழங்கும் ஊக்கம் தரும் உரைகள்", "தொழில் விழிப்புணர்வு அமர்வுகள்", "வாழ்க்கைத் திறன் பயிற்சி", "தொடர்பு திறன் மேம்பாடு", "ஒருவருக்கு ஒருவர் வழிகாட்டுதல்"],
+      heroDevBullets: [
+        "எங்கள் பழைய மாணவர்கள் வழங்கும் ஊக்கம் தரும் உரைகள்",
+        "தொழில் விழிப்புணர்வு அமர்வுகள்",
+        "வாழ்க்கைத் திறன் பயிற்சி",
+        "தொடர்பு திறன் மேம்பாடு",
+        "ஒருவருக்கு ஒருவர் வழிகாட்டுதல்",
+      ],
       heroSince: "2020 முதல், நாங்கள் ",
-      heroSinceTrail: "மாணவர்களுக்கு தமிழ்நாடு முழுவதும் ஆதரவு அளித்துள்ளோம்; மேலும்",
-      heroScholarTrail: "மாணவர்கள் மாற்றத்தின் கல்வி உதவித்தொகையின் மூலம் உயர் கல்வியை தொடர்ந்து வருகின்றனர்.",
+      heroSinceTrail:
+        "மாணவர்களுக்கு தமிழ்நாடு முழுவதும் ஆதரவு அளித்துள்ளோம்; மேலும்",
+      heroScholarTrail:
+        "மாணவர்கள் மாற்றத்தின் கல்வி உதவித்தொகையின் மூலம் உயர் கல்வியை தொடர்ந்து வருகின்றனர்.",
       admissionsBannerTitle: "கே.கே 2025 சேர்க்கை",
-      admissionsBannerText: "கல்வி ஆண்டு 2025-க்கு கே.கே சேர்க்கை தொடங்கியுள்ளது.",
+      admissionsBannerText:
+        "கல்வி ஆண்டு 2025-க்கு கே.கே சேர்க்கை தொடங்கியுள்ளது.",
       applyNow: "இப்போதே விண்ணப்பிக்கவும்",
 
       // Selection Process
@@ -121,16 +168,19 @@ export default function HomePage() {
       step3: "படி 3: குழு நேர்காணல்",
       step3Desc: "எங்கள் நிபுணர் குழுவுடன் ஆன்லைன் நேர்காணல்",
       step4: "படி 4: இறுதி தேர்வு",
-      step4Desc: "தேர்ந்தெடுக்கப்பட்ட மாணவர்கள் எங்கள் திட்டத்தில் சேர்கிறார்கள்",
+      step4Desc:
+        "தேர்ந்தெடுக்கப்பட்ட மாணவர்கள் எங்கள் திட்டத்தில் சேர்கிறார்கள்",
 
       // Features
       featuresTitle: "கே.கே திட்டத்தை ஏன் தேர்வு செய்ய வேண்டும்?",
       feature1: "இலவச தரமான கல்வி",
       feature1Desc: "தகுதியான மாணவர்களுக்கு செலவில்லாமல் விரிவான டியூட்டரிங்",
       feature2: "நிபுணர் டியூட்டர்கள்",
-      feature2Desc: "அனுபவமிக்க கல்வியாளர்கள் மற்றும் பாடத்திட்ட நிபுணர்களிடமிருந்து கற்றுக்கொள்ளுங்கள்",
+      feature2Desc:
+        "அனுபவமிக்க கல்வியாளர்கள் மற்றும் பாடத்திட்ட நிபுணர்களிடமிருந்து கற்றுக்கொள்ளுங்கள்",
       feature3: "தனிப்பயனாக்கப்பட்ட கற்றல்",
-      feature3Desc: "தனிநபர் தேவைகளின் அடிப்படையில் தனிப்பயனாக்கப்பட்ட கற்றல் திட்டங்கள்",
+      feature3Desc:
+        "தனிநபர் தேவைகளின் அடிப்படையில் தனிப்பயனாக்கப்பட்ட கற்றல் திட்டங்கள்",
       feature4: "வாழ்க்கை வழிகாட்டுதல்",
       feature4Desc: "மென்டார்ஷிப் மற்றும் வாழ்க்கை வழிகாட்டுதல் ஆதரவு",
 
@@ -150,7 +200,8 @@ export default function HomePage() {
       doc4: "மாணவர் அடையாள ஆதாரம் (ஆதார்/பள்ளி ஐடி)",
 
       ctaTitle: "உங்கள் எதிர்காலத்தை மாற்ற தயாரா?",
-      ctaDesc: "எங்கள் திட்டத்திலிருந்து பயனடைந்த நூற்றுக்கணக்கான மாணவர்களில் சேரவும்",
+      ctaDesc:
+        "எங்கள் திட்டத்திலிருந்து பயனடைந்த நூற்றுக்கணக்கான மாணவர்களில் சேரவும்",
 
       // Footer
       footerTitle: "கற்போம் கற்பிப்போம் (கே.கே) திட்டம்",
@@ -176,36 +227,129 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Logo or Title Placeholer */}
-            <span className="text-xl font-heading font-bold tracking-tight text-white hover:text-maatram-blue transition-colors">Maatram KK</span>
+            <span className="text-xl font-heading font-bold tracking-tight text-white hover:text-maatram-blue transition-colors">
+              Maatram KK
+            </span>
           </div>
           <div className="hidden md:flex gap-8 items-center font-heading font-medium">
-            <Link href="/" className="hover:text-maatram-blue transition-colors">{currentContent.navHome}</Link>
-            <Link href="#features" className="hover:text-maatram-blue transition-colors">{currentContent.navWhatWeDo}</Link>
-            <a href="https://maatramfoundation.com/admissions/" target="_blank" rel="noopener noreferrer" className="hover:text-maatram-blue transition-colors">{currentContent.navAdmissions}</a>
-            <a href="https://maatramfoundation.com/maatram-events/" target="_blank" rel="noopener noreferrer" className="hover:text-maatram-blue transition-colors">{currentContent.navNews}</a>
-            <a href="https://maatramfoundation.com/maatram-gallery/" target="_blank" rel="noopener noreferrer" className="hover:text-maatram-blue transition-colors">{currentContent.navGallery}</a>
-            <Link href="#contact" className="hover:text-maatram-blue transition-colors">{currentContent.navContact}</Link>
+            <Link
+              href="/"
+              className="hover:text-maatram-blue transition-colors"
+            >
+              {currentContent.navHome}
+            </Link>
+            <Link
+              href="#features"
+              className="hover:text-maatram-blue transition-colors"
+            >
+              {currentContent.navWhatWeDo}
+            </Link>
+            <a
+              href="https://maatramfoundation.com/admissions/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-maatram-blue transition-colors"
+            >
+              {currentContent.navAdmissions}
+            </a>
+            <a
+              href="https://maatramfoundation.com/maatram-events/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-maatram-blue transition-colors"
+            >
+              {currentContent.navNews}
+            </a>
+            <a
+              href="https://maatramfoundation.com/maatram-gallery/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-maatram-blue transition-colors"
+            >
+              {currentContent.navGallery}
+            </a>
+            <Link
+              href="#contact"
+              className="hover:text-maatram-blue transition-colors"
+            >
+              {currentContent.navContact}
+            </Link>
 
-            <Button variant={language === 'en' ? 'default' : 'outline'} size="sm" onClick={() => setLanguage('en')} className={language === 'en' ? 'bg-white text-black hover:bg-white/90' : 'bg-transparent border-white text-white hover:bg-white/20 hover:text-white'}>
+            <Button
+              variant={language === "en" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setLanguage("en")}
+              className={
+                language === "en"
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
+              }
+            >
               EN
             </Button>
-            <Button variant={language === 'ta' ? 'default' : 'outline'} size="sm" onClick={() => setLanguage('ta')} className={language === 'ta' ? 'bg-white text-black hover:bg-white/90' : 'bg-transparent border-white text-white hover:bg-white/20 hover:text-white'}>
+            <Button
+              variant={language === "ta" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setLanguage("ta")}
+              className={
+                language === "ta"
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
+              }
+            >
               TA
             </Button>
 
-            <Link href="/login"><Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/20 hover:text-maatram-yellow transition-all">{language === 'en' ? 'Sign In' : 'உள்நுழைய'}</Button></Link>
-            <Link href="/register/volunteer"><Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/20 hover:text-maatram-yellow transition-all">{language === 'en' ? 'Volunteer Register' : 'தன்னார்வலர் பதிவு'}</Button></Link>
-            <Link href="/apply"><Button className="bg-[#FEC312] hover:bg-[#FFC10E] text-black font-bold">{currentContent.applyNow}</Button></Link>
+            <Link href="/login">
+              <Button
+                variant="outline"
+                className="bg-transparent border-white text-white hover:bg-white/20 hover:text-maatram-yellow transition-all"
+              >
+                {language === "en" ? "Sign In" : "உள்நுழைய"}
+              </Button>
+            </Link>
+            <Link href="/register/volunteer">
+              <Button
+                variant="outline"
+                className="bg-transparent border-white text-white hover:bg-white/20 hover:text-maatram-yellow transition-all"
+              >
+                {language === "en" ? "Volunteer Register" : "தன்னார்வலர் பதிவு"}
+              </Button>
+            </Link>
+            <Link href="/apply">
+              <Button className="bg-[#FEC312] hover:bg-[#FFC10E] text-black font-bold">
+                {currentContent.applyNow}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
       <main>
+        <div className="bg-gradient-to-r from-[#000000] via-[#111111] to-[#1A1A1A] text-[#FEC312]">
+          <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-center gap-2">
+            <span className="text-xs md:text-sm tracking-widest uppercase">
+              KK starts with
+            </span>
+            <span className="text-sm md:text-base font-heading font-bold">
+              Empowering Students
+            </span>
+          </div>
+        </div>
         {/* Hero Section */}
-        <div className="relative isolate px-6 pt-14 lg:px-8 bg-white overflow-hidden">
+        <div className="relative isolate px-6 pt-14 lg:px-8 bg-gradient-to-b from-[#FFF8DB] via-white to-[#FFECA6] overflow-hidden">
+          <div className="absolute -z-10 left-1/2 -translate-x-1/2 top-[-120px] w-[720px] h-[720px] rounded-full bg-[#FFE77A] blur-[120px] opacity-30"></div>
           <div className="mx-auto max-w-7xl py-12 sm:py-24 lg:py-32">
             <div className="mx-auto max-w-3xl text-center">
-              <h1 className="text-5xl font-heading font-bold tracking-tight text-gray-900 sm:text-6xl">{currentContent.heroTitle}</h1>
+              <div className="space-y-3">
+                <div className="text-5xl sm:text-6xl font-heading font-black tracking-tight bg-gradient-to-r from-[#FEC312] via-[#FFC10E] to-[#1A1A1A] bg-clip-text text-transparent">
+                  {currentContent.heroTitleKK}
+                </div>
+                <div className="text-4xl sm:text-5xl font-heading font-bold tracking-tight text-gray-900">
+                  {currentContent.heroTitleEmpower}
+                </div>
+                <span className="mx-auto block h-1 w-24 bg-[#FEC312] rounded-full"></span>
+              </div>
               <p className="mt-6 text-xl leading-8 text-gray-600 font-medium">{currentContent.heroIntro}</p>
               <div className="mt-10 flex items-center justify-center gap-x-6">
                 <Link href="/apply">
@@ -216,6 +360,52 @@ export default function HomePage() {
                     {currentContent.applyNow}
                   </Button>
                 </Link>
+                <Link href="#process">
+                  <Button
+                    variant="outline"
+                    className="border-[#FEC312] text-[#1A1A1A] hover:bg-[#FFF6CC]"
+                  >
+                    Learn More
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="mx-auto mt-12 max-w-7xl">
+              <div className="grid gap-6 md:grid-cols-3">
+                <Card className="border-thick-yellow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <Users className="h-5 w-5 text-maatram-blue" />
+                      Empower
+                    </CardTitle>
+                    <CardDescription>
+                      Access, mentorship, and a community that believes in you.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="border-thick-yellow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <BookOpen className="h-5 w-5 text-maatram-blue" />
+                      Educate
+                    </CardTitle>
+                    <CardDescription>
+                      Structured learning with assignments, tests, and model
+                      exams.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="border-thick-yellow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                      <TrendingUp className="h-5 w-5 text-maatram-blue" />
+                      Elevate
+                    </CardTitle>
+                    <CardDescription>
+                      Career guidance and life skills to shape your future.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
               </div>
             </div>
             <div className="mx-auto mt-12 max-w-3xl text-gray-700 bg-white/40 backdrop-blur-sm p-8 rounded-3xl border-thick-yellow shadow-sm">
@@ -263,7 +453,9 @@ export default function HomePage() {
                 <span className="text-3xl md:text-4xl font-heading font-black text-maatram-blue text-center px-6 leading-tight mb-4 block">
                   {currentContent.admissionsBannerTitle}
                 </span>
-                <p className="text-2xl font-heading font-bold">{currentContent.admissionsBannerText}</p>
+                <p className="text-2xl font-heading font-bold">
+                  {currentContent.admissionsBannerText}
+                </p>
               </div>
               <div className="space-y-6">
                 <Link href="/apply">
@@ -284,23 +476,50 @@ export default function HomePage() {
         <div className="bg-white py-24 sm:py-32" id="process">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-bold leading-7 text-maatram-blue uppercase tracking-widest">{currentContent.selectionProcess}</h2>
-              <p className="mt-2 text-4xl font-heading font-bold tracking-tight text-gray-900 sm:text-5xl">{currentContent.selectionProcessSubtitle}</p>
+              <h2 className="text-base font-bold leading-7 text-maatram-blue uppercase tracking-widest">
+                {currentContent.selectionProcess}
+              </h2>
+              <p className="mt-2 text-4xl font-heading font-bold tracking-tight text-gray-900 sm:text-5xl">
+                {currentContent.selectionProcessSubtitle}
+              </p>
             </div>
             <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
               <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
                 {[
-                  { step: currentContent.step1, desc: currentContent.step1Desc, num: "1" },
-                  { step: currentContent.step2, desc: currentContent.step2Desc, num: "2" },
-                  { step: currentContent.step3, desc: currentContent.step3Desc, num: "3" },
-                  { step: currentContent.step4, desc: currentContent.step4Desc, num: "4" },
+                  {
+                    step: currentContent.step1,
+                    desc: currentContent.step1Desc,
+                    num: "1",
+                  },
+                  {
+                    step: currentContent.step2,
+                    desc: currentContent.step2Desc,
+                    num: "2",
+                  },
+                  {
+                    step: currentContent.step3,
+                    desc: currentContent.step3Desc,
+                    num: "3",
+                  },
+                  {
+                    step: currentContent.step4,
+                    desc: currentContent.step4Desc,
+                    num: "4",
+                  },
                 ].map((item, i) => (
-                  <Card key={i} className="text-center group border-thick-yellow hover:border-maatram-blue transition-all duration-300 transform hover:-translate-y-1">
+                  <Card
+                    key={i}
+                    className="text-center group border-thick-yellow hover:border-maatram-blue transition-all duration-300 transform hover:-translate-y-1"
+                  >
                     <CardHeader>
                       <div className="mx-auto h-16 w-16 bg-[#FEC312] group-hover:bg-maatram-blue rounded-full flex items-center justify-center transition-colors">
-                        <span className="text-3xl font-heading font-bold text-gray-900 group-hover:text-white">{item.num}</span>
+                        <span className="text-3xl font-heading font-bold text-gray-900 group-hover:text-white">
+                          {item.num}
+                        </span>
                       </div>
-                      <CardTitle className="mt-6 text-xl">{item.step}</CardTitle>
+                      <CardTitle className="mt-6 text-xl">
+                        {item.step}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-gray-600">{item.desc}</p>
@@ -316,12 +535,24 @@ export default function HomePage() {
         <div className="bg-maatram-wash py-24 sm:py-32" id="features">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:text-center mb-16">
-              <h2 className="text-base font-bold leading-7 text-maatram-blue uppercase tracking-widest">{currentContent.requirements}</h2>
-              <p className="mt-2 text-4xl font-heading font-bold tracking-tight text-gray-900 sm:text-5xl">{currentContent.requirementsTitle}</p>
+              <h2 className="text-base font-bold leading-7 text-maatram-blue uppercase tracking-widest">
+                {currentContent.requirements}
+              </h2>
+              <p className="mt-2 text-4xl font-heading font-bold tracking-tight text-gray-900 sm:text-5xl">
+                {currentContent.requirementsTitle}
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 max-w-4xl mx-auto">
-              {[currentContent.req1, currentContent.req2, currentContent.req3, currentContent.req4].map((req, i) => (
-                <div key={i} className="flex items-center gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:border-maatram-blue/20 transition-colors">
+              {[
+                currentContent.req1,
+                currentContent.req2,
+                currentContent.req3,
+                currentContent.req4,
+              ].map((req, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:border-maatram-blue/20 transition-colors"
+                >
                   <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-white flex items-center justify-center shadow-sm text-maatram-blue">
                     <CheckCircle className="h-6 w-6" />
                   </div>
@@ -331,11 +562,21 @@ export default function HomePage() {
             </div>
 
             <div className="mx-auto max-w-2xl lg:text-center mt-20 mb-10">
-              <p className="mt-2 text-4xl font-heading font-bold tracking-tight text-gray-900 sm:text-5xl">{currentContent.documentsTitle}</p>
+              <p className="mt-2 text-4xl font-heading font-bold tracking-tight text-gray-900 sm:text-5xl">
+                {currentContent.documentsTitle}
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 max-w-4xl mx-auto">
-              {[currentContent.doc1, currentContent.doc2, currentContent.doc3, currentContent.doc4].map((doc, i) => (
-                <div key={i} className="flex items-center gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:border-maatram-blue/20 transition-colors">
+              {[
+                currentContent.doc1,
+                currentContent.doc2,
+                currentContent.doc3,
+                currentContent.doc4,
+              ].map((doc, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-100 hover:border-maatram-blue/20 transition-colors"
+                >
                   <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-white flex items-center justify-center shadow-sm text-maatram-blue">
                     <FileText className="h-6 w-6" />
                   </div>
@@ -345,15 +586,19 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#000000] text-white shadow-blue-glow-top border-t border-gray-800" id="contact">
+      <footer
+        className="bg-[#000000] text-white shadow-blue-glow-top border-t border-gray-800"
+        id="contact"
+      >
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12">
             <div className="col-span-1 md:col-span-1">
-              <h2 className="text-2xl font-heading font-bold text-[#FEC312] mb-4">Maatram KK</h2>
+              <h2 className="text-2xl font-heading font-bold text-[#FEC312] mb-4">
+                Maatram KK
+              </h2>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {currentContent.footerDesc}
               </p>
@@ -363,11 +608,52 @@ export default function HomePage() {
                 {currentContent.quickLinks}
               </h3>
               <ul className="space-y-4 text-gray-400 text-sm">
-                <li><Link href="/" className="hover:text-maatram-blue transition-colors">{currentContent.navHome}</Link></li>
-                <li><a href="https://maatramfoundation.com/admissions/" target="_blank" rel="noopener noreferrer" className="hover:text-maatram-blue transition-colors">{currentContent.navAdmissions}</a></li>
-                <li><a href="https://maatramfoundation.com/maatram-events/" target="_blank" rel="noopener noreferrer" className="hover:text-maatram-blue transition-colors">{language === 'en' ? 'Events' : 'நிகழ்வுகள்'}</a></li>
-                <li><a href="https://maatramfoundation.com/maatram-gallery/" target="_blank" rel="noopener noreferrer" className="hover:text-maatram-blue transition-colors">{currentContent.navGallery}</a></li>
-                <li><a href="#contact" className="hover:text-maatram-blue transition-colors">{currentContent.navContact}</a></li>
+                <li>
+                  <Link
+                    href="/"
+                    className="hover:text-maatram-blue transition-colors"
+                  >
+                    {currentContent.navHome}
+                  </Link>
+                </li>
+                <li>
+                  <a
+                    href="https://maatramfoundation.com/admissions/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-maatram-blue transition-colors"
+                  >
+                    {currentContent.navAdmissions}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://maatramfoundation.com/maatram-events/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-maatram-blue transition-colors"
+                  >
+                    {language === "en" ? "Events" : "நிகழ்வுகள்"}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://maatramfoundation.com/maatram-gallery/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-maatram-blue transition-colors"
+                  >
+                    {currentContent.navGallery}
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#contact"
+                    className="hover:text-maatram-blue transition-colors"
+                  >
+                    {currentContent.navContact}
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
@@ -384,7 +670,9 @@ export default function HomePage() {
                 <li className="flex gap-3">
                   <Users className="h-5 w-5 text-maatram-blue shrink-0" />
                   <div className="flex flex-col">
-                    <span>No. 47, 7th cross street, Neelankarai, Chennai – 600115</span>
+                    <span>
+                      No. 47, 7th cross street, Neelankarai, Chennai – 600115
+                    </span>
                   </div>
                 </li>
                 <li className="flex gap-3">
@@ -394,19 +682,30 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-heading font-bold mb-6 text-white border-b border-maatram-blue pb-2 inline-block">{language === 'en' ? 'Follow Up' : 'தொடர்ந்து பின்தொடர்வு'}</h3>
+              <h3 className="text-lg font-heading font-bold mb-6 text-white border-b border-maatram-blue pb-2 inline-block">
+                {language === "en" ? "Follow Up" : "தொடர்ந்து பின்தொடர்வு"}
+              </h3>
               <div className="flex gap-4">
-                <a href="#" aria-label="Facebook" className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-maatram-blue transition-all border border-gray-800">
+                <a
+                  href="#"
+                  aria-label="Facebook"
+                  className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-maatram-blue transition-all border border-gray-800"
+                >
                   <div className="h-5 w-5 bg-white mask-facebook" />
                 </a>
-                <a href="#" aria-label="Instagram" className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-maatram-blue transition-all border border-gray-800">
+                <a
+                  href="#"
+                  aria-label="Instagram"
+                  className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-maatram-blue transition-all border border-gray-800"
+                >
                   <div className="h-5 w-5 bg-white mask-instagram" />
                 </a>
               </div>
             </div>
           </div>
           <div className="mt-16 pt-8 border-t border-gray-900 text-center text-xs text-gray-500">
-            &copy; 2024 Karpom Karpippom (KK) - Maatram Foundation. All rights reserved.
+            &copy; 2024 Karpom Karpippom (KK) - Maatram Foundation. All rights
+            reserved.
           </div>
         </div>
       </footer>

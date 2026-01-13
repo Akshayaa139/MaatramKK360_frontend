@@ -42601,3 +42601,74 @@
 [LOG] 2026-01-13T05:59:01.494Z: GET /stats 304 1005ms
 [LOG] 2026-01-13T05:59:01.633Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
 [LOG] 2026-01-13T05:59:02.835Z: [DEBUG] Admin middleware check: User=mohana123@gmail.com, Role=lead
+[LOG] 2026-01-13T06:24:42.312Z: [dotenv@17.2.3] injecting env (21) from .env [2m-- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops[0m
+[LOG] 2026-01-13T06:24:43.279Z: Server running on port 5000
+[LOG] 2026-01-13T06:24:44.098Z: MongoDB Connected: ac-kikyymm-shard-00-01.4tnsugl.mongodb.net
+[LOG] 2026-01-13T06:25:07.759Z: POST /login 200 320ms
+[LOG] 2026-01-13T06:25:07.800Z: OPTIONS /api/auth/login 204 2ms
+[LOG] 2026-01-13T06:25:08.037Z: POST /login 200 233ms
+[LOG] 2026-01-13T06:25:08.104Z: GET /socket.io/?EIO=4&transport=websocket 404 6ms
+[LOG] 2026-01-13T06:25:08.151Z: GET /socket.io/?EIO=4&transport=websocket 404 3ms
+[LOG] 2026-01-13T06:25:08.174Z: OPTIONS /api/dashboard/stats 204 2ms
+[LOG] 2026-01-13T06:25:08.178Z: OPTIONS /api/dashboard/upcoming-sessions 204 1ms
+[LOG] 2026-01-13T06:25:08.192Z: OPTIONS /api/dashboard/recent-activities 204 3ms
+[LOG] 2026-01-13T06:25:08.197Z: GET /socket.io/?EIO=4&transport=websocket 404 15ms
+[LOG] 2026-01-13T06:25:08.293Z: [DEBUG] Admin middleware check: User=susi123@gmail.com, Role=tutor
+[LOG] 2026-01-13T06:25:08.297Z: GET /stats 403 97ms
+[LOG] 2026-01-13T06:25:08.302Z: [DEBUG] Admin middleware check: User=susi123@gmail.com, Role=tutor
+[LOG] 2026-01-13T06:25:08.305Z: GET /upcoming-sessions 403 81ms
+[LOG] 2026-01-13T06:25:08.308Z: [DEBUG] Admin middleware check: User=susi123@gmail.com, Role=tutor
+[LOG] 2026-01-13T06:25:08.312Z: GET /recent-activities 403 78ms
+[LOG] 2026-01-13T06:25:08.354Z: GET /socket.io/?EIO=4&transport=websocket 404 5ms
+[LOG] 2026-01-13T06:25:08.359Z: OPTIONS /api/tutor/sessions/upcoming 204 3ms
+[LOG] 2026-01-13T06:25:08.365Z: OPTIONS /api/tutor/students 204 3ms
+[LOG] 2026-01-13T06:25:08.374Z: OPTIONS /api/tutor/performance 204 3ms
+[LOG] 2026-01-13T06:25:08.380Z: OPTIONS /api/tutor/profile 204 3ms
+[LOG] 2026-01-13T06:25:08.385Z: OPTIONS /api/classes/tutor 204 3ms
+[LOG] 2026-01-13T06:25:08.407Z: OPTIONS /api/messages 204 2ms
+[LOG] 2026-01-13T06:25:08.621Z: GET /profile 304 207ms
+[LOG] 2026-01-13T06:25:08.693Z: GET /performance 304 285ms
+[LOG] 2026-01-13T06:25:08.943Z: GET /sessions/upcoming 304 554ms
+[LOG] 2026-01-13T06:25:09.021Z: GET /tutor 304 600ms
+[LOG] 2026-01-13T06:25:09.067Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:09.270Z: GET / 304 842ms
+[LOG] 2026-01-13T06:25:09.365Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:09.454Z: GET /students 304 1057ms
+[LOG] 2026-01-13T06:25:09.534Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:09.552Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:10.641Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:11.541Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:11.964Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:12.048Z: GET /tutor 304 448ms
+[LOG] 2026-01-13T06:25:12.140Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:13.888Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:14.572Z: GET /socket.io/?EIO=4&transport=websocket 404 3ms
+[LOG] 2026-01-13T06:25:14.677Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:17.179Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:18.921Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:19.596Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:19.737Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:22.211Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:23.751Z: OPTIONS /api/classes/693ebe095ae36d7eb5d4de1a/sessions 204 2ms
+[LOG] 2026-01-13T06:25:23.913Z: GET /693ebe095ae36d7eb5d4de1a/sessions 200 156ms
+[LOG] 2026-01-13T06:25:23.964Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:24.697Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:24.904Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:27.268Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:37.198Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:37.384Z: GET / 304 222ms
+[LOG] 2026-01-13T06:25:37.390Z: GET /profile 304 233ms
+[LOG] 2026-01-13T06:25:37.455Z: GET /performance 304 305ms
+[LOG] 2026-01-13T06:25:37.475Z: GET /sessions/upcoming 304 351ms
+[LOG] 2026-01-13T06:25:37.568Z: GET /tutor 304 426ms
+[LOG] 2026-01-13T06:25:38.020Z: GET /students 304 884ms
+[LOG] 2026-01-13T06:25:38.277Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:38.306Z: OPTIONS /api/assignments/all 204 2ms
+[LOG] 2026-01-13T06:25:38.607Z: GET /all 304 291ms
+[LOG] 2026-01-13T06:25:38.780Z: GET /tutor 304 473ms
+[LOG] 2026-01-13T06:25:38.899Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:39.183Z: GET /tutor 304 399ms
+[LOG] 2026-01-13T06:25:39.869Z: GET /socket.io/?EIO=4&transport=websocket 404 2ms
+[LOG] 2026-01-13T06:25:40.536Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:43.793Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms
+[LOG] 2026-01-13T06:25:43.885Z: GET /socket.io/?EIO=4&transport=websocket 404 1ms

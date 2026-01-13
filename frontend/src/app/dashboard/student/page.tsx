@@ -3,10 +3,25 @@
 import { useEffect, useState } from "react";
 // import { useSession } from "next-auth/react";
 import { useTabSession } from "@/hooks/useTabSession";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Link2, Users, Trophy, Wand2, Lightbulb, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Calendar,
+  Link2,
+  Users,
+  Trophy,
+  Wand2,
+  Lightbulb,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,7 +55,7 @@ const QUOTES = [
   "Learning never exhausts the mind. – Leonardo da Vinci",
   "Live as if you were to die tomorrow. Learn as if you were to live forever. – Mahatma Gandhi",
   "It always seems impossible until it's done. – Nelson Mandela",
-  "Education is the most powerful weapon which you can use to change the world. – Nelson Mandela"
+  "Education is the most powerful weapon which you can use to change the world. – Nelson Mandela",
 ];
 
 interface QuizQuestion {
@@ -97,7 +112,7 @@ export default function StudentDashboard() {
         setLoadingQuiz(false);
       }
     };
-    // if (accessToken) load(); 
+    // if (accessToken) load();
     // Just load regardless, api interceptor handles token
     load();
   }, []);
@@ -107,7 +122,7 @@ export default function StudentDashboard() {
     setShowResult(false);
     setCurrentQuestionIdx(0);
     setQuizAnswers({});
-    setDailyPoints(prev => prev); // Keep points from previous sessions? Or reset? Let's keep for now.
+    setDailyPoints((prev) => prev); // Keep points from previous sessions? Or reset? Let's keep for now.
     // Actually reset per "session" of quiz, but maybe show total per day if I had backend support.
 
     setIsCorrect(null);
@@ -117,12 +132,15 @@ export default function StudentDashboard() {
       // Pass ALL subjects joined by comma for combined quiz
       const subjectParam = subjects.join(",");
 
-      const endpoint = subjects.length > 0
-        ? `/flashcards/quick?n=5&subject=${encodeURIComponent(subjectParam)}`
-        : "/flashcards/quick?n=5";
+      const endpoint =
+        subjects.length > 0
+          ? `/flashcards/quick?n=5&subject=${encodeURIComponent(subjectParam)}`
+          : "/flashcards/quick?n=5";
 
       const q = await api.get(endpoint);
-      const questions = Array.isArray(q.data?.questions) ? q.data.questions : [];
+      const questions = Array.isArray(q.data?.questions)
+        ? q.data.questions
+        : [];
       setQuickQuiz(questions);
     } catch (e) {
       console.error("Quiz load error", e);
@@ -138,11 +156,14 @@ export default function StudentDashboard() {
     if (!currentQ) return;
 
     setSelectedAnswer(choiceIndex);
-    const correct = currentQ.correctIndex !== undefined ? currentQ.correctIndex === choiceIndex : true; // Default to true if no index provided (fallback)
+    const correct =
+      currentQ.correctIndex !== undefined
+        ? currentQ.correctIndex === choiceIndex
+        : true; // Default to true if no index provided (fallback)
     setIsCorrect(correct);
 
     if (correct) {
-      setDailyPoints(prev => prev + 10);
+      setDailyPoints((prev) => prev + 10);
       toast(
         { title: "Correct!", description: "+10 Points" },
         { className: "bg-green-100 border-green-500 text-green-900" }
@@ -150,15 +171,15 @@ export default function StudentDashboard() {
     } else {
       toast({
         title: "Incorrect",
-        description: "Keep trying!"
+        description: "Keep trying!",
       });
     }
 
-    setQuizAnswers(prev => ({ ...prev, [currentQuestionIdx]: choiceIndex }));
+    setQuizAnswers((prev) => ({ ...prev, [currentQuestionIdx]: choiceIndex }));
 
     setTimeout(() => {
       if (quickQuiz && currentQuestionIdx < quickQuiz.length - 1) {
-        setCurrentQuestionIdx(prev => prev + 1);
+        setCurrentQuestionIdx((prev) => prev + 1);
         setSelectedAnswer(null);
         setIsCorrect(null);
       } else {
@@ -173,10 +194,7 @@ export default function StudentDashboard() {
         questionIndex: Number(k),
         selectedIndex: quizAnswers[Number(k)],
       }));
-      await api.post(
-        "/flashcards/responses",
-        { answers }
-      );
+      await api.post("/flashcards/responses", { answers });
       toast({
         title: "Challenge Completed!",
         description: `You earned ${dailyPoints} points today!`,
@@ -187,7 +205,7 @@ export default function StudentDashboard() {
     } catch (e) {
       toast({
         title: "Error",
-        description: "Failed to save quiz."
+        description: "Failed to save quiz.",
       });
     }
   };
@@ -208,25 +226,34 @@ export default function StudentDashboard() {
 
   const checkLiveSessions = async () => {
     try {
-      const res = await api.get<{ sessionId: string, classId: string, title: string, sessionLink: string }[]>("/students/classes/live");
+      const res = await api.get<
+        {
+          sessionId: string;
+          classId: string;
+          title: string;
+          sessionLink: string;
+        }[]
+      >("/students/classes/live");
       const currentLive = res.data;
-      const currentLiveIds = new Set(currentLive.map(s => s.classId));
+      const currentLiveIds = new Set(currentLive.map((s) => s.classId));
 
-      setLiveSessions(prev => {
+      setLiveSessions((prev) => {
         // Check for new sessions
-        currentLive.forEach(s => {
+        currentLive.forEach((s) => {
           if (!prev.has(s.classId)) {
             // New session started!
             toast(
-              (
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ fontWeight: 600 }}>Class Started! 🔴</div>
-                  <div>{`Your ${s.title} class is now live. Click to join!`}</div>
-                  <Button variant="default" size="sm" onClick={() => window.open(s.sessionLink, "_blank")}>
-                    Join Now
-                  </Button>
-                </div>
-              ),
+              <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ fontWeight: 600 }}>Class Started! 🔴</div>
+                <div>{`Your ${s.title} class is now live. Click to join!`}</div>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => window.open(s.sessionLink, "_blank")}
+                >
+                  Join Now
+                </Button>
+              </div>,
               { duration: 10000 }
             );
             // Also play sound if possible (optional, browser rules apply)
@@ -236,12 +263,15 @@ export default function StudentDashboard() {
       });
 
       // Update local classes state to reflect live status visually
-      setClasses(prevClasses => prevClasses.map(c => ({
-        ...c,
-        isLive: currentLiveIds.has(c.id),
-        sessionLink: currentLive.find(l => l.classId === c.id)?.sessionLink || c.sessionLink
-      })));
-
+      setClasses((prevClasses) =>
+        prevClasses.map((c) => ({
+          ...c,
+          isLive: currentLiveIds.has(c.id),
+          sessionLink:
+            currentLive.find((l) => l.classId === c.id)?.sessionLink ||
+            c.sessionLink,
+        }))
+      );
     } catch (e) {
       console.error("Polling error", e);
     }
@@ -276,7 +306,9 @@ export default function StudentDashboard() {
       <div className="flex flex-col md:flex-row gap-6">
         <div className="flex-1 space-y-6">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Student Dashboard</h2>
+            <h2 className="text-3xl font-bold tracking-tight">
+              Student Dashboard
+            </h2>
             <p className="text-sm text-muted-foreground">
               Welcome back, {user?.name || session?.user?.name || "Student"}
             </p>
@@ -287,14 +319,25 @@ export default function StudentDashboard() {
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-md shadow-sm">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-amber-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-amber-700">
-                    <span className="font-bold">Application Under Review:</span> Your account is currently pending tele-verification.
-                    Full access to classes, quizzes, and specific subject materials will be enabled once your application is verified by an admin.
+                    <span className="font-bold">Application Under Review:</span>{" "}
+                    Your account is currently pending tele-verification. Full
+                    access to classes, quizzes, and specific subject materials
+                    will be enabled once your application is verified by an
+                    admin.
                   </p>
                 </div>
               </div>
@@ -328,10 +371,16 @@ export default function StudentDashboard() {
                       <span className="font-medium">{student?.grade}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block mb-2">Enrolled Subjects</span>
+                      <span className="text-muted-foreground block mb-2">
+                        Enrolled Subjects
+                      </span>
                       <div className="flex flex-wrap gap-2">
                         {(student?.subjects || []).map((s) => (
-                          <Badge key={s} variant="secondary" className="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200">
+                          <Badge
+                            key={s}
+                            variant="secondary"
+                            className="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200"
+                          >
                             {s}
                           </Badge>
                         ))}
@@ -348,20 +397,32 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Attendance</div>
-                  <div className="text-2xl font-bold text-green-600">{progress.attendanceRate ?? 0}%</div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Attendance
+                  </div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {progress.attendanceRate ?? 0}%
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Test Avg</div>
-                  <div className="text-2xl font-bold text-blue-600">{progress.testAveragePercent ?? 0}%</div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Test Avg
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {progress.testAveragePercent ?? 0}%
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Growth</div>
-                  <div className="text-2xl font-bold text-violet-600">{progress.compositeGrowth ?? 0}%</div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Growth
+                  </div>
+                  <div className="text-2xl font-bold text-violet-600">
+                    {progress.compositeGrowth ?? 0}%
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -390,7 +451,9 @@ export default function StudentDashboard() {
               {loadingQuiz ? (
                 <div className="flex flex-col items-center justify-center h-64 space-y-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                  <p className="text-sm text-muted-foreground">Loading your challenge...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Loading your challenge...
+                  </p>
                 </div>
               ) : quickQuiz && quickQuiz.length > 0 ? (
                 <div className="flex-1 flex flex-col min-h-[300px]">
@@ -404,8 +467,18 @@ export default function StudentDashboard() {
                         className="flex-1 flex flex-col"
                       >
                         <div className="flex justify-between items-center mb-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          <span>Question {currentQuestionIdx + 1} of {quickQuiz.length}</span>
-                          {currentQ.subject && <Badge variant="outline" className="text-[10px] h-5">{currentQ.subject}</Badge>}
+                          <span>
+                            Question {currentQuestionIdx + 1} of{" "}
+                            {quickQuiz.length}
+                          </span>
+                          {currentQ.subject && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-5"
+                            >
+                              {currentQ.subject}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="mb-6">
@@ -417,22 +490,37 @@ export default function StudentDashboard() {
                         <div className="space-y-3 mt-auto">
                           {currentQ.choices.map((choice, idx) => {
                             const isSelected = selectedAnswer === idx;
-                            const isCorrectAnswer = currentQ.correctIndex === idx;
-                            const showCorrect = selectedAnswer !== null && isCorrectAnswer;
+                            const isCorrectAnswer =
+                              currentQ.correctIndex === idx;
+                            const showCorrect =
+                              selectedAnswer !== null && isCorrectAnswer;
                             const showWrong = isSelected && !isCorrectAnswer;
 
-                            let borderClass = 'border-white bg-white hover:border-indigo-200';
-                            let textClass = 'text-slate-700';
-                            let icon = <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs border bg-slate-100 text-slate-500 border-slate-200`}>{String.fromCharCode(65 + idx)}</div>;
+                            let borderClass =
+                              "border-white bg-white hover:border-indigo-200";
+                            let textClass = "text-slate-700";
+                            let icon = (
+                              <div
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs border bg-slate-100 text-slate-500 border-slate-200`}
+                              >
+                                {String.fromCharCode(65 + idx)}
+                              </div>
+                            );
 
                             if (showCorrect) {
-                              borderClass = 'border-green-500 bg-green-50 shadow-md';
-                              textClass = 'text-green-700 font-medium';
-                              icon = <CheckCircle2 className="w-6 h-6 text-green-600" />;
+                              borderClass =
+                                "border-green-500 bg-green-50 shadow-md";
+                              textClass = "text-green-700 font-medium";
+                              icon = (
+                                <CheckCircle2 className="w-6 h-6 text-green-600" />
+                              );
                             } else if (showWrong) {
-                              borderClass = 'border-red-500 bg-red-50 shadow-md';
-                              textClass = 'text-red-700 font-medium';
-                              icon = <XCircle className="w-6 h-6 text-red-600" />;
+                              borderClass =
+                                "border-red-500 bg-red-50 shadow-md";
+                              textClass = "text-red-700 font-medium";
+                              icon = (
+                                <XCircle className="w-6 h-6 text-red-600" />
+                              );
                             } else if (selectedAnswer === null) {
                               // Default hover state handled in className
                             }
@@ -472,12 +560,19 @@ export default function StudentDashboard() {
                         </motion.div>
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold text-slate-800">Challenge Complete!</h3>
+                        <h3 className="text-2xl font-bold text-slate-800">
+                          Challenge Complete!
+                        </h3>
                         <p className="text-muted-foreground mt-2">
-                          You earned <strong>{dailyPoints} points</strong> today.
+                          You earned <strong>{dailyPoints} points</strong>{" "}
+                          today.
                         </p>
                       </div>
-                      <Button size="lg" className="w-full bg-indigo-600 hover:bg-indigo-700" onClick={submitQuiz}>
+                      <Button
+                        size="lg"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        onClick={submitQuiz}
+                      >
                         Save Progress
                       </Button>
                     </motion.div>
@@ -485,7 +580,9 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">No quizzes available for your subjects right now.</p>
+                  <p className="text-muted-foreground">
+                    No quizzes available for your subjects right now.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -500,10 +597,22 @@ export default function StudentDashboard() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             {classes.map((cls) => (
-              <div key={cls.id} className={`p-4 border rounded-xl hover:shadow-md transition-all bg-white ${cls.isLive ? 'border-red-400 ring-1 ring-red-400' : ''}`}>
+              <div
+                key={cls.id}
+                className={`p-4 border rounded-xl hover:shadow-md transition-all bg-white ${
+                  cls.isLive ? "border-red-400 ring-1 ring-red-400" : ""
+                }`}
+              >
                 <div className="font-semibold text-lg text-slate-800 flex items-center justify-between">
                   {cls.title || "Class"}
-                  {cls.isLive && <Badge variant="destructive" className="animate-pulse px-1.5 py-0 text-[10px]">LIVE</Badge>}
+                  {cls.isLive && (
+                    <Badge
+                      variant="destructive"
+                      className="animate-pulse px-1.5 py-0 text-[10px]"
+                    >
+                      LIVE
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -512,7 +621,10 @@ export default function StudentDashboard() {
                   </div>
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{cls.schedule?.day || ""} • {cls.schedule?.startTime} - {cls.schedule?.endTime}</span>
+                    <span>
+                      {cls.schedule?.day || ""} • {cls.schedule?.startTime} -{" "}
+                      {cls.schedule?.endTime}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t">
@@ -520,15 +632,24 @@ export default function StudentDashboard() {
                     <Button
                       variant={cls.isLive ? "default" : "outline"}
                       size="sm"
-                      className={`w-full ${cls.isLive ? "bg-red-600 hover:bg-red-700" : ""}`}
+                      className={`w-full ${
+                        cls.isLive ? "bg-red-600 hover:bg-red-700" : ""
+                      }`}
                       onClick={(e) => {
                         e.preventDefault();
                         window.open(cls.sessionLink, "_blank");
-                      }}>
-                      <Link2 className="h-3 w-3 mr-2" /> {cls.isLive ? "Join Live Class" : "Join Class"}
+                      }}
+                    >
+                      <Link2 className="h-3 w-3 mr-2" />{" "}
+                      {cls.isLive ? "Join Live Class" : "Join Class"}
                     </Button>
                   ) : (
-                    <Badge variant="secondary" className="w-full justify-center py-1">No link available</Badge>
+                    <Badge
+                      variant="secondary"
+                      className="w-full justify-center py-1"
+                    >
+                      No link available
+                    </Badge>
                   )}
                 </div>
               </div>

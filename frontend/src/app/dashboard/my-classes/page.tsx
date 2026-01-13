@@ -282,7 +282,16 @@ export default function MyClassesPage() {
   };
 
   const upcomingClasses = classes
-    .filter((c) => c.status === "scheduled" || c.status === "rescheduled")
+    .filter(
+      (c) =>
+        (c.status === "scheduled" || c.status === "rescheduled") &&
+        getLastClassDate(
+          c.schedule.day,
+          c.schedule.startTime,
+          c.schedule.endTime,
+          c.schedule.date
+        ) === null
+    )
     .map((c) => ({
       ...c,
       nextDate: getNextClassDate(
