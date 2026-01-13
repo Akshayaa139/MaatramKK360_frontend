@@ -1,0 +1,519 @@
+﻿
+> frontend@0.1.0 lint
+> eslint
+
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\parse_lint.js
+  2:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\admin\page.tsx
+   19:46  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+   21:10  warning  'loading' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   23:9   warning  'runAutoMap' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   32:20  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+   54:19  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+   99:64  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  143:36  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  202:33  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  233:35  warning  'res' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  242:36  warning  'e' is defined but never used                    @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\api\auth\[...nextauth]\route.ts
+  79:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\apply\page.tsx
+    6:8   warning  'Link' is defined but never used                @typescript-eslint/no-unused-vars
+   22:8   warning  'dynamic' is defined but never used             @typescript-eslint/no-unused-vars
+   25:44  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   25:95  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   81:8   warning  'SuggestionResponse' is defined but never used  @typescript-eslint/no-unused-vars
+   83:85  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  262:98  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  327:43  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  337:32  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  337:55  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  392:19  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\applications\[id]\page.tsx
+   17:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   18:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   19:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   20:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   60:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   78:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\page.tsx
+   25:3   warning  'Search' is defined but never used         @typescript-eslint/no-unused-vars
+   34:3   warning  'CalendarDays' is defined but never used   @typescript-eslint/no-unused-vars
+   43:3   warning  'DialogTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+  163:52  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  165:14  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  758:68  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  775:65  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\panels\evaluation\page.tsx
+  23:3  warning  'Calendar' is defined but never used  @typescript-eslint/no-unused-vars
+  24:3  warning  'Clock' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\panels\page.tsx
+    6:8   warning  'AutoMapButton' is defined but never used                     @typescript-eslint/no-unused-vars
+   11:3   warning  'Table' is defined but never used                             @typescript-eslint/no-unused-vars
+   12:3   warning  'TableBody' is defined but never used                         @typescript-eslint/no-unused-vars
+   13:3   warning  'TableCell' is defined but never used                         @typescript-eslint/no-unused-vars
+   14:3   warning  'TableHead' is defined but never used                         @typescript-eslint/no-unused-vars
+   15:3   warning  'TableHeader' is defined but never used                       @typescript-eslint/no-unused-vars
+   16:3   warning  'TableRow' is defined but never used                          @typescript-eslint/no-unused-vars
+   38:3   warning  'Clock' is defined but never used                             @typescript-eslint/no-unused-vars
+   39:3   warning  'Users' is defined but never used                             @typescript-eslint/no-unused-vars
+   41:3   warning  'Mail' is defined but never used                              @typescript-eslint/no-unused-vars
+   42:3   warning  'CheckCircle' is defined but never used                       @typescript-eslint/no-unused-vars
+   43:3   warning  'XCircle' is defined but never used                           @typescript-eslint/no-unused-vars
+   45:3   warning  'Star' is defined but never used                              @typescript-eslint/no-unused-vars
+   91:10  warning  'selectedSlot' is assigned a value but never used             @typescript-eslint/no-unused-vars
+   91:24  warning  'setSelectedSlot' is assigned a value but never used          @typescript-eslint/no-unused-vars
+   94:10  warning  'selectedTimeslotId' is assigned a value but never used       @typescript-eslint/no-unused-vars
+   94:30  warning  'setSelectedTimeslotId' is assigned a value but never used    @typescript-eslint/no-unused-vars
+   95:10  warning  'availableTimeslots' is assigned a value but never used       @typescript-eslint/no-unused-vars
+   95:64  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+   98:10  warning  'scheduleSlotId' is assigned a value but never used           @typescript-eslint/no-unused-vars
+   98:26  warning  'setScheduleSlotId' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  168:23  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  188:51  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  221:59  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  226:28  error    Expected a `const` instead of a literal type assertion        @typescript-eslint/prefer-as-const
+  229:17  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  231:34  error    Expected a `const` instead of a literal type assertion        @typescript-eslint/prefer-as-const
+  247:38  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  259:24  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  265:19  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  272:21  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  379:21  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  399:49  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  431:17  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  438:9   warning  'assignStudentsToPanel' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  456:21  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  476:49  error    Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  506:9   warning  'runAutoMap' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  527:9   warning  'getStudentStatusBadge' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  540:9   warning  'handleScheduleInterview' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\reports\page.tsx
+    4:69  warning  'CardFooter' is defined but never used    @typescript-eslint/no-unused-vars
+    7:10  warning  'Label' is defined but never used         @typescript-eslint/no-unused-vars
+    9:38  warning  'Users' is defined but never used         @typescript-eslint/no-unused-vars
+    9:45  warning  'Calendar' is defined but never used      @typescript-eslint/no-unused-vars
+   14:46  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   15:42  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   16:44  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:37  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   37:39  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:49  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+   82:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  100:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  118:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\students\page.tsx
+  197:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  213:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\televerification\page.tsx
+    9:10  warning  'Select' is defined but never used                       @typescript-eslint/no-unused-vars
+    9:18  warning  'SelectContent' is defined but never used                @typescript-eslint/no-unused-vars
+    9:33  warning  'SelectItem' is defined but never used                   @typescript-eslint/no-unused-vars
+    9:45  warning  'SelectTrigger' is defined but never used                @typescript-eslint/no-unused-vars
+    9:60  warning  'SelectValue' is defined but never used                  @typescript-eslint/no-unused-vars
+   12:45  warning  'BookOpen' is defined but never used                     @typescript-eslint/no-unused-vars
+   12:55  warning  'Clock' is defined but never used                        @typescript-eslint/no-unused-vars
+   35:27  warning  'setApplicationData' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  309:99  error    Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\tests\page.tsx
+  9:10  warning  'Badge' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\tutors\page.tsx
+  30:16  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  72:63  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\admin\volunteers\page.tsx
+   34:3   warning  'Filter' is defined but never used            @typescript-eslint/no-unused-vars
+   67:17  warning  'session' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   77:52  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   90:50  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  377:68  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  656:53  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  680:50  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  734:51  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  738:45  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\announcements\page.tsx
+   21:54  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   22:42  error    Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+   23:10  warning  'isLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  106:14  warning  'err' is defined but never used                 @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\assignments\page.tsx
+    6:46  warning  'CardFooter' is defined but never used                                                                        @typescript-eslint/no-unused-vars
+   10:10  warning  'Label' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+   14:34  warning  'Eye' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+   14:52  warning  'Download' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   14:62  warning  'Upload' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+   54:14  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   59:34  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   85:23  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   90:16  warning  'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  105:59  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  118:23  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  133:53  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  138:18  warning  'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  152:6   warning  React Hook useEffect has a missing dependency: 'classes'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+  168:6   warning  React Hook useEffect has a missing dependency: 'studentId'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  223:14  warning  'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  232:14  warning  'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  288:16  warning  'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  298:14  warning  'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  303:9   warning  'handleDownloadSubmissions' is assigned a value but never used                                                @typescript-eslint/no-unused-vars
+  607:54  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  607:81  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  639:58  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  639:85  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  742:31  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  743:21  warning  'marks' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\attendance\page.tsx
+   11:10  warning  'Calendar' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   38:13  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   50:9   warning  'router' is assigned a value but never used                                                                       @typescript-eslint/no-unused-vars
+   63:16  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+   68:6   warning  React Hook useEffect has a missing dependency: 'selectedClass'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   82:31  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+   87:16  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+  106:23  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  107:31  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  109:56  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  117:56  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  126:28  warning  'e' is defined but never used                                                                                     @typescript-eslint/no-unused-vars
+  196:14  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+  219:14  warning  'err' is defined but never used                                                                                   @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\classes\page.tsx
+    8:83  warning  'ExternalLink' is defined but never used                                                                    @typescript-eslint/no-unused-vars
+   59:54  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   70:41  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   83:33  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   99:44  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   99:74  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  103:33  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  107:55  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  148:20  warning  'e' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  171:6   warning  React Hook useEffect has a missing dependency: 'session'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  174:24  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  175:24  error    Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  207:14  warning  'e' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\engagement\page.tsx
+   22:3   warning  'Send' is defined but never used              @typescript-eslint/no-unused-vars
+   23:3   warning  'Calendar' is defined but never used          @typescript-eslint/no-unused-vars
+   25:3   warning  'Users' is defined but never used             @typescript-eslint/no-unused-vars
+   33:17  warning  'session' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   46:50  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   47:44  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   48:46  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   79:58  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  106:14  warning  'err' is defined but never used               @typescript-eslint/no-unused-vars
+  111:35  warning  'resourceId' is defined but never used        @typescript-eslint/no-unused-vars
+  127:14  warning  'err' is defined but never used               @typescript-eslint/no-unused-vars
+  142:14  warning  'err' is defined but never used               @typescript-eslint/no-unused-vars
+  248:43  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\help\page.tsx
+   13:79  warning  'DialogTrigger' is defined but never used                        @typescript-eslint/no-unused-vars
+   20:10  warning  'activeTab' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+   21:56  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   28:60  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  195:41  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  218:14  warning  'err' is defined but never used                                  @typescript-eslint/no-unused-vars
+  233:14  warning  'err' is defined but never used                                  @typescript-eslint/no-unused-vars
+  321:31  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  321:47  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  437:54  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  480:32  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  541:20  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\layout.tsx
+   41:34  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  206:29  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:33  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  274:27  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  276:31  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\meeting\[sessionId]\page.tsx
+   22:29  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+   23:46  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+   27:54  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+   41:8   warning  React Hook useEffect has missing dependencies: 'initJitsi' and 'jitsiApi'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  141:8   warning  React Hook useEffect has a missing dependency: 'handleLeft'. Either include it or remove the dependency array                  react-hooks/exhaustive-deps
+  151:18  warning  'e' is defined but never used                                                                                                  @typescript-eslint/no-unused-vars
+  201:31  error    Unexpected any. Specify a different type                                                                                       @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\mentoring\page.tsx
+    4:69  warning  'CardFooter' is defined but never used                           @typescript-eslint/no-unused-vars
+   24:44  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   25:44  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   34:62  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   70:54  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   74:54  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  126:14  warning  'err' is defined but never used                                  @typescript-eslint/no-unused-vars
+  139:14  warning  'err' is defined but never used                                  @typescript-eslint/no-unused-vars
+  149:14  warning  'err' is defined but never used                                  @typescript-eslint/no-unused-vars
+  159:14  warning  'err' is defined but never used                                  @typescript-eslint/no-unused-vars
+  352:56  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  374:72  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  491:27  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  491:71  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\my-classes\page.tsx
+    9:67   warning  'MessageSquare' is defined but never used  @typescript-eslint/no-unused-vars
+    9:132  warning  'UserCheck' is defined but never used      @typescript-eslint/no-unused-vars
+    9:143  warning  'XCircle' is defined but never used        @typescript-eslint/no-unused-vars
+   13:10   warning  'Select' is defined but never used         @typescript-eslint/no-unused-vars
+   13:18   warning  'SelectContent' is defined but never used  @typescript-eslint/no-unused-vars
+   13:33   warning  'SelectItem' is defined but never used     @typescript-eslint/no-unused-vars
+   13:45   warning  'SelectTrigger' is defined but never used  @typescript-eslint/no-unused-vars
+   13:60   warning  'SelectValue' is defined but never used    @typescript-eslint/no-unused-vars
+   31:13   error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  148:62   error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  159:54   error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  176:14   warning  'e' is defined but never used              @typescript-eslint/no-unused-vars
+  185:14   warning  'err' is defined but never used            @typescript-eslint/no-unused-vars
+  280:14   warning  'e' is defined but never used              @typescript-eslint/no-unused-vars
+  305:14   warning  'error' is defined but never used          @typescript-eslint/no-unused-vars
+  321:14   warning  'e' is defined but never used              @typescript-eslint/no-unused-vars
+  346:14   warning  'e' is defined but never used              @typescript-eslint/no-unused-vars
+  681:54   error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\page.tsx
+   29:26  warning  'status' is assigned a value but never used                      @typescript-eslint/no-unused-vars
+   37:43  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  100:23  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  120:15  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  120:22  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\profile\page.tsx
+    7:43   warning  'Save' is defined but never used              @typescript-eslint/no-unused-vars
+   93:51   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  134:19   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  163:19   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  178:19   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  184:36   warning  '_index' is defined but never used            @typescript-eslint/no-unused-vars
+  190:19   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  212:9    warning  'saveAll' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  278:94   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  282:104  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  286:91   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  290:111  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  332:97   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  344:59   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  356:59   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  368:59   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  380:59   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  393:51   error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\reschedule\page.tsx
+    8:10  warning  'Input' is defined but never used                                @typescript-eslint/no-unused-vars
+   12:10  warning  'Badge' is defined but never used                                @typescript-eslint/no-unused-vars
+   22:35  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   39:45  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   41:84  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   57:43  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   70:43  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  225:26  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\student-progress\page.tsx
+  131:14  warning  'e' is defined but never used                                    @typescript-eslint/no-unused-vars
+  142:14  warning  'e' is defined but never used                                    @typescript-eslint/no-unused-vars
+  160:14  warning  'e' is defined but never used                                    @typescript-eslint/no-unused-vars
+  186:14  warning  'e' is defined but never used                                    @typescript-eslint/no-unused-vars
+  209:48  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  437:28  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  437:36  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\student\mentoring\page.tsx
+   4:69  warning  'CardFooter' is defined but never used            @typescript-eslint/no-unused-vars
+  20:42  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  25:22  warning  'setDuration' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  28:50  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  78:18  warning  'err' is defined but never used                   @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\student\page.tsx
+   23:19  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   72:10  warning  'isCorrect' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+  189:14  warning  'e' is defined but never used                                    @typescript-eslint/no-unused-vars
+  199:10  warning  'liveSessions' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  272:13  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  272:21  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\students\page.tsx
+    9:18  warning  'BookOpen' is defined but never used      @typescript-eslint/no-unused-vars
+   31:58  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:65  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\study-materials\page.tsx
+   11:46  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   84:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  154:65  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\tutor\page.tsx
+  101:19  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  152:9   warning  'isDharshini' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\tutor\study-materials\page.tsx
+  169:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\tutors\page.tsx
+    4:10  warning  'useTabSession' is defined but never used                        @typescript-eslint/no-unused-vars
+   15:10  warning  'Badge' is defined but never used                                @typescript-eslint/no-unused-vars
+  271:52  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\volunteer\page.tsx
+  16:16   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:77   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:35   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:116  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\dashboard\volunteer\televerification\[id]\page.tsx
+   15:35   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   20:50   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   42:16   warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+   99:83   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:74   error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:150  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\forgot-password\page.tsx
+  30:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\layout.tsx
+  8:7  warning  'inter' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\login\page.tsx
+  53:18  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  59:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\page.tsx
+  7:16   warning  'CardContent' is defined but never used      @typescript-eslint/no-unused-vars
+  7:29   warning  'CardDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  8:17   warning  'BookOpen' is defined but never used         @typescript-eslint/no-unused-vars
+  8:27   warning  'GraduationCap' is defined but never used    @typescript-eslint/no-unused-vars
+  8:71   warning  'UserCheck' is defined but never used        @typescript-eslint/no-unused-vars
+  8:82   warning  'Calendar' is defined but never used         @typescript-eslint/no-unused-vars
+  8:105  warning  'TrendingUp' is defined but never used       @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\app\register\page.tsx
+  68:17  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:16  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\ApplicationForm.tsx
+   2:20  warning  'useEffect' is defined but never used       @typescript-eslint/no-unused-vars
+  74:5   warning  'watch' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\ChatWidget.tsx
+   19:35  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   59:14  warning  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  151:38  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  157:38  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  163:38  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  166:37  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+  169:42  warning  'node' is defined but never used          @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\SubmissionReviewDialog.tsx
+    4:10   warning  'Label' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+   36:8    warning  React Hook useEffect has a missing dependency: 'fetchSubmissions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   70:18   warning  'err' is defined but never used                                                                                      @typescript-eslint/no-unused-vars
+  110:89   error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  111:107  error    Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\SubmitAssignmentDialog.tsx
+  42:23  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  55:46  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  55:64  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\TakeQuizDialog.tsx
+   77:8   warning  React Hook useEffect has a missing dependency: 'handleAutoSubmit'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  150:78  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                      react/no-unescaped-entities
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\TestDialog.tsx
+   80:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:72  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\admin\AutoMapButton.tsx
+   9:6   warning  'Mapping' is defined but never used       @typescript-eslint/no-unused-vars
+   9:16  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:25  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:46  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  89:19  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\chat\ChatDashboard.tsx
+  122:9   warning  'handleSendMessage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  184:10  warning  'p' is defined but never used                           @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\chat\ChatOnlineUsers.tsx
+  12:11  warning  'OnlineUser' is defined but never used      @typescript-eslint/no-unused-vars
+  29:3   warning  'conversationId' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\chat\ChatWindow.tsx
+    6:34  warning  'AvatarImage' is defined but never used                                                                                                                                  @typescript-eslint/no-unused-vars
+    9:10  warning  'Card' is defined but never used                                                                                                                                         @typescript-eslint/no-unused-vars
+   11:10  warning  'Badge' is defined but never used                                                                                                                                        @typescript-eslint/no-unused-vars
+   15:3   warning  'MoreVertical' is defined but never used                                                                                                                                 @typescript-eslint/no-unused-vars
+   21:3   warning  'Reply' is defined but never used                                                                                                                                        @typescript-eslint/no-unused-vars
+   87:6   warning  React Hook useEffect has missing dependencies: 'cleanupSocketListeners', 'loadMessages', and 'setupSocketListeners'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  141:21  warning  'fullName' is assigned a value but never used                                                                                                                            @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\dashboard\TutorDashboard.tsx
+   4:10  warning  'useTabSession' is defined but never used  @typescript-eslint/no-unused-vars
+  24:3   warning  'MessageSquare' is defined but never used  @typescript-eslint/no-unused-vars
+  26:3   warning  'Clock' is defined but never used          @typescript-eslint/no-unused-vars
+  28:3   warning  'AlertCircle' is defined but never used    @typescript-eslint/no-unused-vars
+  30:3   warning  'Edit' is defined but never used           @typescript-eslint/no-unused-vars
+  33:3   warning  'BookOpen' is defined but never used       @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\components\ui\use-toast.tsx
+  18:32  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  18:47  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  20:32  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  62:35  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  62:47  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  63:33  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  63:45  error    Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  65:1   warning  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\hooks\useTabSession.ts
+   6:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\lib\api.ts
+  34:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Akshayaa\Downloads\MaatramKK360_frontend\frontend\src\next-auth.d.ts
+  1:8   warning  'NextAuth' is defined but never used  @typescript-eslint/no-unused-vars
+  2:10  warning  'JWT' is defined but never used       @typescript-eslint/no-unused-vars
+
+Γ£û 397 problems (211 errors, 186 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+

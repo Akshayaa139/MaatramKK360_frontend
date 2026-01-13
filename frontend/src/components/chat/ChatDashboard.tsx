@@ -119,53 +119,6 @@ export default function ChatDashboard() {
     }
   };
 
-  const handleSendMessage = async (content: string, attachments?: File[]) => {
-    if (!selectedConversation || !content.trim()) return;
-
-    try {
-      // Convert File objects to the expected attachment format
-      const formattedAttachments = attachments
-        ? attachments.map((file, index) => ({
-            id: `attachment-${Date.now()}-${index}`,
-            name: file.name,
-            url: URL.createObjectURL(file), // Temporary URL for preview
-            type: file.type,
-            size: file.size,
-          }))
-        : [];
-
-      // Send message through socket
-      socketService.sendMessage({
-        conversationId: selectedConversation.id,
-        content: content.trim(),
-        attachments: formattedAttachments,
-      });
-
-      // Update local conversation state
-      if (session?.user) {
-        setSelectedConversation((prev) =>
-          prev
-            ? {
-                ...prev,
-                lastMessage: {
-                  id: `temp-${Date.now()}`,
-                  content: content.trim(),
-                  sender: {
-                    id: session.user.id,
-                    fullName: session.user.name || "You",
-                    role: session.user.role || "user",
-                  },
-                  createdAt: new Date().toISOString(),
-                },
-              }
-            : null
-        );
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  };
-
   const handleBackToConversations = () => {
     if (selectedConversation) {
       socketService.leaveConversation(selectedConversation.id);
@@ -181,7 +134,7 @@ export default function ChatDashboard() {
     );
     const online = conversations.filter((conv) =>
       conv.participants.some(
-        (p) =>
+        () =>
           // This would need to be implemented with actual online status
           true // Placeholder
       )

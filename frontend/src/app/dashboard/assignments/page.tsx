@@ -31,6 +31,7 @@ interface Assignment {
   file?: File;
   classId?: string;
   isSubmitted?: boolean;
+  submissions?: Submission[];
 }
 
 interface Test {
@@ -41,11 +42,23 @@ interface Test {
   duration?: string;
   status?: string;
   classId?: string;
+  class?: string | { _id: string }; // API field
   questions?: {
     questionText: string;
     options: string[];
     correctAnswer: number;
   }[];
+  submissions?: Submission[];
+}
+
+interface Submission {
+  _id: string;
+  student: string | { _id: string; name: string };
+  file?: string;
+  answers?: number[];
+  score?: number;
+  marks?: number;
+  feedback?: string;
 }
 
 interface Class {
@@ -56,7 +69,7 @@ interface Class {
 
 export default function AssignmentsPage() {
   const { data: session } = useTabSession();
-  const role = (session?.user as any)?.role?.toLowerCase();
+  const role = session?.user?.role?.toLowerCase();
   const [activeTab, setActiveTab] = useState("assignments");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -82,7 +95,7 @@ export default function AssignmentsPage() {
         const response = await api.get(endpoint);
         // Deduplicate classes by _id to prevent key warnings
         const uniqueClasses = response.data
-          .filter((c: any) => c?._id)
+          .filter((c: Class) => c?._id)
           .filter((c: Class, index: number, self: Class[]) =>
             index === self.findIndex((t) => t._id === c._id)
           );
@@ -102,8 +115,8 @@ export default function AssignmentsPage() {
         try {
           const endpoint = role === 'student' ? `/students/assignments/${filterClass}` : `/assignments/${filterClass}`;
           const response = await api.get(endpoint);
-          const mappedAssignments = response.data.map((a: any) => {
-            const cls = classes.find((c) => c._id === (typeof a.class === 'string' ? a.class : a.class?._id));
+          const mappedAssignments = response.data.map((a: Assignment) => {
+            const cls = classes.find((c) => c._id === (typeof a.class === 'string' ? a.class : (a.class as any)?._id));
             const now = new Date();
             const due = new Date(a.dueDate);
             return {
@@ -130,9 +143,9 @@ export default function AssignmentsPage() {
         try {
           const endpoint = role === 'student' ? `/students/tests/${filterClass}` : `/tests/${filterClass}`;
           const response = await api.get(endpoint);
-          const mappedTests = response.data.map((t: any) => ({
+          const mappedTests = response.data.map((t: Test) => ({
             ...t,
-            classId: t.class?._id || t.class,
+            classId: typeof t.class === 'string' ? t.class : t.class?._id,
           }));
           setTests(mappedTests);
         } catch (err) {
@@ -604,7 +617,7 @@ export default function AssignmentsPage() {
                           {role === 'student' && (
                             <TableCell>
                               {(() => {
-                                const sub = (test as any).submissions?.find((s: any) =>
+                                const sub = test.submissions?.find((s: any) =>
                                   String(s.student) === String(studentId) ||
                                   String(s.student?._id || s.student) === String(studentId)
                                 );
@@ -636,7 +649,7 @@ export default function AssignmentsPage() {
                                   className="border-maatram-blue text-maatram-blue hover:bg-blue-50"
                                 >
                                   {(() => {
-                                    const sub = (test as any).submissions?.find((s: any) =>
+                                    const sub = test.submissions?.find((s: any) =>
                                       String(s.student) === String(studentId) ||
                                       String(s.student?._id || s.student) === String(studentId)
                                     );

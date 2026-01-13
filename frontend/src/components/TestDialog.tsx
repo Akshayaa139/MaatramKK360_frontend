@@ -34,7 +34,7 @@ interface Test {
   date?: string;
   duration?: string;
   classId?: string;
-  class?: string; // from backend
+  class?: string | { _id: string }; // from backend
   questions?: Question[];
   status?: string;
 }
@@ -77,7 +77,7 @@ export function TestDialog({
       setDescription(test.description);
       setDate(test.date ? new Date(test.date).toISOString().split("T")[0] : "");
       setDuration(test.duration ?? "");
-      setClassId((test as any).class || test.classId || "");
+      setClassId((typeof test.class === 'string' ? test.class : test.class?._id) || test.classId || "");
       setStatus(test.status || "scheduled");
       setQuestions(test.questions && test.questions.length > 0 ? test.questions : [
         { questionText: "", options: ["", "", "", ""], correctAnswer: 0 }
@@ -101,7 +101,7 @@ export function TestDialog({
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | number | string[]) => {
     setQuestions(prev => {
       const newQuestions = [...prev];
       newQuestions[index] = { ...newQuestions[index], [field]: value };

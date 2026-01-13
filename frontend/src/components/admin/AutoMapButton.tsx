@@ -6,17 +6,15 @@ import { toast } from "@/components/ui/use-toast";
 import api from "@/lib/api";
 import { useSession } from "next-auth/react";
 
-type Mapping = any;
-
 export default function AutoMapButton({
   onComplete,
   compact = false,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onComplete?: (result: any) => void;
   compact?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
-
   const { data: session } = useSession();
 
   const runStudentsMap = async () => {
@@ -39,13 +37,15 @@ export default function AutoMapButton({
       const count =
         typeof data.totalMapped === "number"
           ? data.totalMapped
-          : (data.mappings || []).filter((m: any) => m.tutorId).length;
+          : (data.mappings || []).filter((m: { tutorId?: string }) => m.tutorId)
+              .length;
       toast({
         title: "Auto-map complete",
         description: `${count} students assigned.`,
       });
       // pass full response so caller can read mappings and totalMapped
       if (onComplete) onComplete(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setLoading(false);
       console.error(err);
@@ -54,6 +54,7 @@ export default function AutoMapButton({
         resp && typeof resp === "string"
           ? resp
           : resp?.message || err?.message || String(err);
+
       if (typeof message === "string" && message.trim().startsWith("<")) {
         toast({
           title: "Auto-map error",
@@ -77,8 +78,10 @@ export default function AutoMapButton({
         {},
         { headers }
       );
+
       setLoading(false);
       const data = res.data || {};
+
       toast({
         title: "Application auto-map complete",
         description: `${
@@ -86,14 +89,17 @@ export default function AutoMapButton({
         } assignments created.`,
       });
       if (onComplete) onComplete(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setLoading(false);
-      console.error(err);
       const resp = err?.response?.data;
       const message =
         resp && typeof resp === "string"
           ? resp
-          : resp?.message || err?.message || String(err);
+          : (resp as { message?: string })?.message ||
+            err?.message ||
+            String(err);
+
       if (typeof message === "string" && message.trim().startsWith("<")) {
         toast({
           title: "Application auto-map error",

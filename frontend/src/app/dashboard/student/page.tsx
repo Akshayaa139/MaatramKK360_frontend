@@ -143,16 +143,14 @@ export default function StudentDashboard() {
 
     if (correct) {
       setDailyPoints(prev => prev + 10);
-      toast({
-        title: "Correct!",
-        description: "+10 Points",
-        className: "bg-green-100 border-green-500 text-green-900"
-      });
+      toast(
+        { title: "Correct!", description: "+10 Points" },
+        { className: "bg-green-100 border-green-500 text-green-900" }
+      );
     } else {
       toast({
         title: "Incorrect",
-        description: "Keep trying!",
-        variant: "destructive"
+        description: "Keep trying!"
       });
     }
 
@@ -189,8 +187,7 @@ export default function StudentDashboard() {
     } catch (e) {
       toast({
         title: "Error",
-        description: "Failed to save quiz.",
-        variant: "destructive"
+        description: "Failed to save quiz."
       });
     }
   };
@@ -220,16 +217,18 @@ export default function StudentDashboard() {
         currentLive.forEach(s => {
           if (!prev.has(s.classId)) {
             // New session started!
-            toast({
-              title: "Class Started! 🔴",
-              description: `Your ${s.title} class is now live. Click to join!`,
-              action: (
-                <Button variant="default" size="sm" onClick={() => window.open(s.sessionLink, "_blank")}>
-                  Join Now
-                </Button>
+            toast(
+              (
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontWeight: 600 }}>Class Started! 🔴</div>
+                  <div>{`Your ${s.title} class is now live. Click to join!`}</div>
+                  <Button variant="default" size="sm" onClick={() => window.open(s.sessionLink, "_blank")}>
+                    Join Now
+                  </Button>
+                </div>
               ),
-              duration: 10000,
-            });
+              { duration: 10000 }
+            );
             // Also play sound if possible (optional, browser rules apply)
           }
         });

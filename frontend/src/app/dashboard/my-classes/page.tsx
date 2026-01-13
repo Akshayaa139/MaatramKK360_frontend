@@ -2,17 +2,47 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Clock, Users, Video, FileText, MessageSquare, Loader2, Link as LinkIcon, Edit2, Plus, Check, X, UserCheck, XCircle, CalendarDays } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  Users,
+  Video,
+  FileText,
+  Loader2,
+  Link as LinkIcon,
+  Edit2,
+  Plus,
+  Check,
+  X,
+  CalendarDays,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -28,7 +58,16 @@ interface Class {
     startTime: string;
     endTime: string;
   };
-  students: any[];
+  students: {
+    _id: string;
+    id?: string;
+    name?: string;
+    email?: string;
+    studentId?: string;
+    user?: {
+      name: string;
+    };
+  }[];
   status: string;
   materials?: string[];
   attendance?: number;
@@ -40,8 +79,32 @@ interface Class {
   isLive?: boolean;
 }
 
-const getNextClassDate = (dayName: string, startTime: string, endTime: string, classDate?: string): Date => {
-  const [hours, minutes] = startTime.split(':').map(Number);
+interface AvailableStudent {
+  _id: string;
+  personalInfo: {
+    fullName: string;
+  };
+}
+
+interface ClassSession {
+  _id: string;
+  date: string;
+  topic: string;
+  attendance?: number;
+  startTime: string;
+  endTime?: string;
+  status: string;
+  participantCount: number;
+  students: { name: string }[];
+}
+
+const getNextClassDate = (
+  dayName: string,
+  startTime: string,
+  endTime: string,
+  classDate?: string
+): Date => {
+  const [hours, minutes] = startTime.split(":").map(Number);
 
   if (classDate) {
     const d = new Date(classDate);
@@ -49,14 +112,22 @@ const getNextClassDate = (dayName: string, startTime: string, endTime: string, c
     return d;
   }
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const targetDayIdx = days.indexOf(dayName);
   if (targetDayIdx === -1) return new Date();
 
   const now = new Date();
   const currentDayIdx = now.getDay();
   // ... rest same
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(":").map(Number);
 
   let diff = targetDayIdx - currentDayIdx;
 
@@ -77,8 +148,13 @@ const getNextClassDate = (dayName: string, startTime: string, endTime: string, c
   return nextDate;
 };
 
-const getLastClassDate = (dayName: string, startTime: string, endTime: string, classDate?: string): Date | null => {
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
+const getLastClassDate = (
+  dayName: string,
+  startTime: string,
+  endTime: string,
+  classDate?: string
+): Date | null => {
+  const [endHours, endMinutes] = endTime.split(":").map(Number);
 
   if (classDate) {
     const d = new Date(classDate);
@@ -88,7 +164,15 @@ const getLastClassDate = (dayName: string, startTime: string, endTime: string, c
     return null;
   }
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const targetDayIdx = days.indexOf(dayName);
   const now = new Date();
   const currentDayIdx = now.getDay();
@@ -104,7 +188,7 @@ const getLastClassDate = (dayName: string, startTime: string, endTime: string, c
     }
   }
   return null;
-}
+};
 
 export default function MyClassesPage() {
   const router = useRouter();
@@ -119,7 +203,9 @@ export default function MyClassesPage() {
 
   // Edit Links (Recording/Notes) State
   const [isEditLinksModalOpen, setIsEditLinksModalOpen] = useState(false);
-  const [editingLinksClass, setEditingLinksClass] = useState<Class | null>(null);
+  const [editingLinksClass, setEditingLinksClass] = useState<Class | null>(
+    null
+  );
   const [recordingLink, setRecordingLink] = useState("");
   const [notesLink, setNotesLink] = useState("");
   const [savingLinks, setSavingLinks] = useState(false);
@@ -141,22 +227,28 @@ export default function MyClassesPage() {
     day: "Monday",
     date: undefined,
     startTime: "",
-    endTime: ""
+    endTime: "",
   });
 
   // Assign All Students Feature State
-  const [availableStudents, setAvailableStudents] = useState<any[]>([]);
+  const [availableStudents, setAvailableStudents] = useState<
+    AvailableStudent[]
+  >([]);
   const [assignAllStudents, setAssignAllStudents] = useState(false);
 
   // Attendance Modal State
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
-  const [attendanceStatus, setAttendanceStatus] = useState<Record<string, "present" | "absent">>({});
-  const [markingAttendance, setMarkingAttendance] = useState<string | null>(null);
+  const [attendanceStatus, setAttendanceStatus] = useState<
+    Record<string, "present" | "absent">
+  >({});
+  const [markingAttendance, setMarkingAttendance] = useState<string | null>(
+    null
+  );
 
   // Session Details State
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [classSessions, setClassSessions] = useState<any[]>([]);
+  const [classSessions, setClassSessions] = useState<ClassSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
@@ -173,7 +265,7 @@ export default function MyClassesPage() {
     try {
       const res = await api.get("/tutor/students");
       setAvailableStudents(res.data || []);
-    } catch (e) {
+    } catch {
       console.error("Failed to fetch students");
     }
   };
@@ -182,7 +274,7 @@ export default function MyClassesPage() {
     try {
       const response = await api.get("/classes/tutor");
       setClasses(response.data);
-    } catch (err) {
+    } catch {
       setError("Failed to fetch classes. Please try again later.");
     } finally {
       setLoading(false);
@@ -190,33 +282,54 @@ export default function MyClassesPage() {
   };
 
   const upcomingClasses = classes
-    .filter(c => c.status === 'scheduled' || c.status === 'rescheduled')
-    .map(c => ({
+    .filter((c) => c.status === "scheduled" || c.status === "rescheduled")
+    .map((c) => ({
       ...c,
-      nextDate: getNextClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime, c.schedule.date)
+      nextDate: getNextClassDate(
+        c.schedule.day,
+        c.schedule.startTime,
+        c.schedule.endTime,
+        c.schedule.date
+      ),
     }))
-    .sort((a, b) => (a.nextDate?.getTime() || 0) - (b.nextDate?.getTime() || 0));
+    .sort(
+      (a, b) => (a.nextDate?.getTime() || 0) - (b.nextDate?.getTime() || 0)
+    );
 
   // Determine "Virtual" Past Classes (Active classes that finished today)
   const virtualPastClasses = classes
-    .filter(c => c.status === 'scheduled' || c.status === 'rescheduled')
-    .map(c => {
-      const lastDate = getLastClassDate(c.schedule.day, c.schedule.startTime, c.schedule.endTime, c.schedule.date);
+    .filter((c) => c.status === "scheduled" || c.status === "rescheduled")
+    .map((c) => {
+      const lastDate = getLastClassDate(
+        c.schedule.day,
+        c.schedule.startTime,
+        c.schedule.endTime,
+        c.schedule.date
+      );
       if (lastDate) {
-        return { ...c, status: 'completed', nextDate: lastDate, _virtual: true };
+        return {
+          ...c,
+          status: "completed",
+          nextDate: lastDate,
+          _virtual: true,
+        };
       }
       return null;
     })
     .filter((c): c is NonNullable<typeof c> => c !== null);
 
   const pastClasses = [
-    ...classes.filter(c => c.status === 'completed' || c.status === 'cancelled'),
-    ...virtualPastClasses
-  ].filter(c => !!c).sort((a, b) => {
-    const timeA = a!.nextDate ? new Date(a!.nextDate).getTime() : 0;
-    const timeB = b!.nextDate ? new Date(b!.nextDate).getTime() : 0;
-    return timeB - timeA;
-  }); // Sort newest first
+    ...classes.filter(
+      (c) => c.status === "completed" || c.status === "cancelled"
+    ),
+    ...virtualPastClasses,
+  ]
+    .filter((c) => !!c)
+    .sort((a, b) => {
+      const timeA = a!.nextDate ? new Date(a!.nextDate).getTime() : 0;
+      const timeB = b!.nextDate ? new Date(b!.nextDate).getTime() : 0;
+      return timeB - timeA;
+    }); // Sort newest first
 
   const handleStartClassClick = async (classItem: Class) => {
     // Open attendance modal immediately
@@ -228,24 +341,33 @@ export default function MyClassesPage() {
     router.push(`/dashboard/meeting/${classItem._id}`);
   };
 
-  const handleMarkAttendance = async (studentId: string, status: "present" | "absent") => {
+  const handleMarkAttendance = async (
+    studentId: string,
+    status: "present" | "absent"
+  ) => {
     if (!attendanceClass) return;
     setMarkingAttendance(studentId);
     try {
       // Optimistic update
-      setAttendanceStatus(prev => ({ ...prev, [studentId]: status }));
+      setAttendanceStatus((prev) => ({ ...prev, [studentId]: status }));
 
       await api.put(`/attendance/${attendanceClass._id}`, {
         attendanceData: [{ studentId, status: status }],
-        date: new Date().toISOString().split('T')[0] // Ensure date is sent if needed by backend API logic
+        date: new Date().toISOString().split("T")[0], // Ensure date is sent if needed by backend API logic
       });
 
-      toast({ title: status === 'present' ? "Marked Present" : "Marked Absent", duration: 1000 });
+      toast(
+        { title: status === "present" ? "Marked Present" : "Marked Absent" },
+        { duration: 1000 }
+      );
     } catch (error) {
       console.error("Failed to mark attendance", error);
-      toast({ title: "Error", description: "Failed to save attendance.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to save attendance.",
+      });
       // Revert on failure
-      setAttendanceStatus(prev => {
+      setAttendanceStatus((prev) => {
         const copy = { ...prev };
         delete copy[studentId];
         return copy;
@@ -265,45 +387,79 @@ export default function MyClassesPage() {
   const handleSaveAndStart = async () => {
     if (!selectedClass) return;
     if (!meetingLink) {
-      toast({ title: "Link required", description: "Please enter a valid meeting link.", variant: "destructive" });
+      toast({
+        title: "Link required",
+        description: "Please enter a valid meeting link.",
+      });
       return;
     }
 
     try {
-      const res = await api.post(`/classes/${selectedClass._id}/start`, { sessionLink: meetingLink });
+      const res = await api.post(`/classes/${selectedClass._id}/start`, {
+        sessionLink: meetingLink,
+      });
       const finalLink = res.data?.sessionLink || meetingLink;
 
       setIsLinkModalOpen(false);
-      window.open(finalLink, '_blank');
+      window.open(finalLink, "_blank");
       fetchClasses();
-      toast({ title: "Class Started", description: "Meeting link saved and attendance tracking started." });
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to start class.", variant: "destructive" });
+      toast({
+        title: "Class Started",
+        description: "Meeting link saved and attendance tracking started.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to start class.",
+      });
     }
   };
 
   const handleCreateClass = async () => {
     // Validation
-    if (!newClass.title || !newClass.subject || (!newClass.day && !newClass.date) || !newClass.startTime || !newClass.endTime) {
-      toast({ title: "Error", description: "Please fill in all required fields.", variant: "destructive" });
+    if (
+      !newClass.title ||
+      !newClass.subject ||
+      (!newClass.day && !newClass.date) ||
+      !newClass.startTime ||
+      !newClass.endTime
+    ) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+      });
       return;
     }
 
     const payload = {
       ...newClass,
-      students: assignAllStudents ? availableStudents.map(s => s._id) : []
+      students: assignAllStudents ? availableStudents.map((s) => s._id) : [],
     };
 
     try {
       await api.post("/classes", payload);
-      toast({ title: "Success", description: `Class created with ${payload.students.length} students assigned.` });
+      toast({
+        title: "Success",
+        description: `Class created with ${payload.students.length} students assigned.`,
+      });
       setIsCreateModalOpen(false);
       // Reset form
-      setNewClass({ title: "", subject: "", description: "", day: "Monday", date: undefined, startTime: "", endTime: "" });
+      setNewClass({
+        title: "",
+        subject: "",
+        description: "",
+        day: "Monday",
+        date: undefined,
+        startTime: "",
+        endTime: "",
+      });
       setAssignAllStudents(false);
       fetchClasses();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to create class.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to create class.",
+      });
     }
   };
 
@@ -312,14 +468,17 @@ export default function MyClassesPage() {
   };
 
   const handleViewDetails = async (classId: string) => {
-    setSelectedClass(classes.find(c => c._id === classId) || null);
+    setSelectedClass(classes.find((c) => c._id === classId) || null);
     setIsDetailsModalOpen(true);
     setLoadingSessions(true);
     try {
       const res = await api.get(`/classes/${classId}/sessions`);
       setClassSessions(res.data);
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to fetch session details.", variant: "destructive" });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to fetch session details.",
+      });
     } finally {
       setLoadingSessions(false);
     }
@@ -338,13 +497,16 @@ export default function MyClassesPage() {
     try {
       await api.put(`/classes/${editingLinksClass._id}/schedule`, {
         recordingLink,
-        notesLink
+        notesLink,
       });
       toast({ title: "Success", description: "Links updated successfully." });
       setIsEditLinksModalOpen(false);
       fetchClasses();
     } catch (e) {
-      toast({ title: "Error", description: "Failed to update links.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to update links.",
+      });
     } finally {
       setSavingLinks(false);
     }
@@ -359,11 +521,7 @@ export default function MyClassesPage() {
   }
 
   if (error) {
-    return (
-      <div className="text-center py-8 text-red-500">
-        {error}
-      </div>
-    );
+    return <div className="text-center py-8 text-red-500">{error}</div>;
   }
 
   return (
@@ -390,26 +548,40 @@ export default function MyClassesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {upcomingClasses.map((classItem) => (
-                <Card key={classItem._id} className="flex flex-col h-full border-l-4 border-l-primary overflow-hidden">
+                <Card
+                  key={classItem._id}
+                  className="flex flex-col h-full border-l-4 border-l-primary overflow-hidden"
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{classItem.title}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {classItem.title}
+                      </CardTitle>
                       <div className="flex gap-1">
                         {classItem.isLive && (
                           <Badge className="bg-red-600 hover:bg-red-700 animate-pulse text-white">
                             LIVE
                           </Badge>
                         )}
-                        <Badge variant={
-                          classItem.nextDate && classItem.nextDate.getDate() === new Date().getDate()
-                            ? "default"
-                            : "secondary"
-                        }>
-                          {classItem.nextDate && classItem.nextDate.getDate() === new Date().getDate() ? "Today" : "Upcoming"}
+                        <Badge
+                          variant={
+                            classItem.nextDate &&
+                            classItem.nextDate.getDate() ===
+                              new Date().getDate()
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {classItem.nextDate &&
+                          classItem.nextDate.getDate() === new Date().getDate()
+                            ? "Today"
+                            : "Upcoming"}
                         </Badge>
                       </div>
                     </div>
-                    <CardDescription className="line-clamp-2">{classItem.description}</CardDescription>
+                    <CardDescription className="line-clamp-2">
+                      {classItem.description}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow">
                     <div className="space-y-4 text-sm">
@@ -417,14 +589,26 @@ export default function MyClassesPage() {
                         <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
                         <span className="font-semibold text-foreground">
                           {classItem.schedule.date
-                            ? new Date(classItem.schedule.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-                            : classItem.nextDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-                          }
+                            ? new Date(
+                                classItem.schedule.date
+                              ).toLocaleDateString("en-US", {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : classItem.nextDate?.toLocaleDateString("en-US", {
+                                weekday: "long",
+                                month: "short",
+                                day: "numeric",
+                              })}
                         </span>
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{classItem.schedule.startTime} - {classItem.schedule.endTime}</span>
+                        <span>
+                          {classItem.schedule.startTime} -{" "}
+                          {classItem.schedule.endTime}
+                        </span>
                       </div>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -433,7 +617,9 @@ export default function MyClassesPage() {
                       {classItem.sessionLink && (
                         <div className="flex items-center text-blue-600 overflow-hidden">
                           <LinkIcon className="h-3 w-3 mr-2 shrink-0" />
-                          <span className="truncate text-xs">{classItem.sessionLink}</span>
+                          <span className="truncate text-xs">
+                            {classItem.sessionLink}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -477,27 +663,41 @@ export default function MyClassesPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {pastClasses.map((classItem) => (
-                <Card key={classItem._id} className="flex flex-col h-full overflow-hidden">
+                <Card
+                  key={classItem._id}
+                  className="flex flex-col h-full overflow-hidden"
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{classItem.title}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {classItem.title}
+                      </CardTitle>
                       <Badge variant="secondary">{classItem.status}</Badge>
                     </div>
-                    <CardDescription className="line-clamp-2">{classItem.description}</CardDescription>
+                    <CardDescription className="line-clamp-2">
+                      {classItem.description}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow">
                     <div className="space-y-4 text-sm">
                       <div className="flex items-center">
                         <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{classItem.schedule.date ? format(new Date(classItem.schedule.date), "PPP") : classItem.schedule.day}</span>
+                        <span>
+                          {classItem.schedule.date
+                            ? format(new Date(classItem.schedule.date), "PPP")
+                            : classItem.schedule.day}
+                        </span>
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{classItem.schedule.startTime} - {classItem.schedule.endTime}</span>
+                        <span>
+                          {classItem.schedule.startTime} -{" "}
+                          {classItem.schedule.endTime}
+                        </span>
                       </div>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>Attendance: {classItem.attendance || 'N/A'}</span>
+                        <span>Attendance: {classItem.attendance || "N/A"}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -532,7 +732,8 @@ export default function MyClassesPage() {
           <DialogHeader>
             <DialogTitle>Setup Class Meeting</DialogTitle>
             <DialogDescription>
-              To start this class, please enter a valid Google Meet or Zoom link.
+              To start this class, please enter a valid Google Meet or Zoom
+              link.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
@@ -547,7 +748,9 @@ export default function MyClassesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsLinkModalOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsLinkModalOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSaveAndStart}>Save & Start Class</Button>
           </DialogFooter>
         </DialogContent>
@@ -571,7 +774,9 @@ export default function MyClassesPage() {
                 id="title"
                 className="col-span-3"
                 value={newClass.title}
-                onChange={(e) => setNewClass({ ...newClass, title: e.target.value })}
+                onChange={(e) =>
+                  setNewClass({ ...newClass, title: e.target.value })
+                }
                 placeholder="e.g. Physics Grade 12"
               />
             </div>
@@ -583,7 +788,9 @@ export default function MyClassesPage() {
                 id="subject"
                 className="col-span-3"
                 value={newClass.subject}
-                onChange={(e) => setNewClass({ ...newClass, subject: e.target.value })}
+                onChange={(e) =>
+                  setNewClass({ ...newClass, subject: e.target.value })
+                }
                 placeholder="e.g. Physics"
               />
             </div>
@@ -603,14 +810,20 @@ export default function MyClassesPage() {
                       )}
                     >
                       <CalendarDays className="mr-2 h-4 w-4" />
-                      {newClass.date ? format(newClass.date, "PPP") : <span>Pick a date</span>}
+                      {newClass.date ? (
+                        format(newClass.date, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={newClass.date}
-                      onSelect={(date) => setNewClass(prev => ({ ...prev, date }))}
+                      onSelect={(date) =>
+                        setNewClass((prev) => ({ ...prev, date }))
+                      }
                       initialFocus
                     />
                   </PopoverContent>
@@ -626,7 +839,9 @@ export default function MyClassesPage() {
                 type="time"
                 className="col-span-3"
                 value={newClass.startTime}
-                onChange={(e) => setNewClass({ ...newClass, startTime: e.target.value })}
+                onChange={(e) =>
+                  setNewClass({ ...newClass, startTime: e.target.value })
+                }
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -638,7 +853,9 @@ export default function MyClassesPage() {
                 type="time"
                 className="col-span-3"
                 value={newClass.endTime}
-                onChange={(e) => setNewClass({ ...newClass, endTime: e.target.value })}
+                onChange={(e) =>
+                  setNewClass({ ...newClass, endTime: e.target.value })
+                }
               />
             </div>
 
@@ -652,47 +869,81 @@ export default function MyClassesPage() {
                   checked={assignAllStudents}
                   onChange={(e) => setAssignAllStudents(e.target.checked)}
                 />
-                <label htmlFor="assignAll" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                <label
+                  htmlFor="assignAll"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
                   Assign to all my students ({availableStudents.length})
                 </label>
               </div>
             </div>
-
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleCreateClass}>Create Class</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Attendance Modal */}
-      <Dialog open={isAttendanceModalOpen} onOpenChange={setIsAttendanceModalOpen}>
+      <Dialog
+        open={isAttendanceModalOpen}
+        onOpenChange={setIsAttendanceModalOpen}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Mark Attendance - {attendanceClass?.title}</DialogTitle>
+            <DialogTitle>
+              Mark Attendance - {attendanceClass?.title}
+            </DialogTitle>
             <DialogDescription>
               Mark students explicitly as present or absent.
             </DialogDescription>
           </DialogHeader>
 
           <div className="max-h-[60vh] overflow-y-auto space-y-4 py-4">
-            {attendanceClass?.students && attendanceClass.students.length > 0 ? (
-              attendanceClass.students.map((student: any) => (
-                <div key={student._id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+            {attendanceClass?.students &&
+            attendanceClass.students.length > 0 ? (
+              attendanceClass.students.map((student) => (
+                <div
+                  key={student._id}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-card"
+                >
                   <div className="flex flex-col">
-                    <span className="font-medium">{student.user?.name || student.name || student.email || "Student"}</span>
-                    <span className="text-xs text-muted-foreground">ID: {student.studentId || "N/A"}</span>
+                    <span className="font-medium">
+                      {student.user?.name ||
+                        student.name ||
+                        student.email ||
+                        "Student"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ID: {student.studentId || "N/A"}
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant={attendanceStatus[student._id] === 'present' ? "default" : "outline"}
-                      className={attendanceStatus[student._id] === 'present' ? "bg-green-600 hover:bg-green-700" : "hover:text-green-600 hover:border-green-600"}
-                      onClick={() => handleMarkAttendance(student._id, 'present')}
+                      variant={
+                        attendanceStatus[student._id] === "present"
+                          ? "default"
+                          : "outline"
+                      }
+                      className={
+                        attendanceStatus[student._id] === "present"
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "hover:text-green-600 hover:border-green-600"
+                      }
+                      onClick={() =>
+                        handleMarkAttendance(student._id, "present")
+                      }
                       disabled={markingAttendance === student._id}
                     >
-                      {markingAttendance === student._id && attendanceStatus[student._id] === 'present' ? (
+                      {markingAttendance === student._id &&
+                      attendanceStatus[student._id] === "present" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Check className="h-4 w-4 mr-1" />
@@ -701,12 +952,23 @@ export default function MyClassesPage() {
                     </Button>
                     <Button
                       size="sm"
-                      variant={attendanceStatus[student._id] === 'absent' ? "default" : "outline"}
-                      className={attendanceStatus[student._id] === 'absent' ? "bg-red-600 hover:bg-red-700" : "hover:text-red-600 hover:border-red-600"}
-                      onClick={() => handleMarkAttendance(student._id, 'absent')}
+                      variant={
+                        attendanceStatus[student._id] === "absent"
+                          ? "default"
+                          : "outline"
+                      }
+                      className={
+                        attendanceStatus[student._id] === "absent"
+                          ? "bg-red-600 hover:bg-red-700"
+                          : "hover:text-red-600 hover:border-red-600"
+                      }
+                      onClick={() =>
+                        handleMarkAttendance(student._id, "absent")
+                      }
                       disabled={markingAttendance === student._id}
                     >
-                      {markingAttendance === student._id && attendanceStatus[student._id] === 'absent' ? (
+                      {markingAttendance === student._id &&
+                      attendanceStatus[student._id] === "absent" ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <X className="h-4 w-4 mr-1" />
@@ -724,7 +986,9 @@ export default function MyClassesPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setIsAttendanceModalOpen(false)}>Done</Button>
+            <Button onClick={() => setIsAttendanceModalOpen(false)}>
+              Done
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -740,7 +1004,9 @@ export default function MyClassesPage() {
 
           <div className="max-h-[60vh] overflow-y-auto space-y-4 py-4">
             {loadingSessions ? (
-              <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin" />
+              </div>
             ) : classSessions.length > 0 ? (
               <div className="space-y-4">
                 {classSessions.map((session) => (
@@ -750,34 +1016,78 @@ export default function MyClassesPage() {
                         <div className="flex items-center gap-2">
                           <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {new Date(session.startTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {new Date(session.startTime).toLocaleDateString(
+                              "en-US",
+                              {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
                           </span>
                         </div>
-                        <Badge variant={session.status === 'completed' ? "secondary" : "default"}>
-                          {session.status === 'completed' ? "Completed" : "Ongoing"}
+                        <Badge
+                          variant={
+                            session.status === "completed"
+                              ? "secondary"
+                              : "default"
+                          }
+                        >
+                          {session.status === "completed"
+                            ? "Completed"
+                            : "Ongoing"}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
-                          <span className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Start Time</span>
-                          <span>{new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Start Time
+                          </span>
+                          <span>
+                            {new Date(session.startTime).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
+                          </span>
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> End Time</span>
-                          <span>{session.endTime ? new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---'}</span>
+                          <span className="text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> End Time
+                          </span>
+                          <span>
+                            {session.endTime
+                              ? new Date(session.endTime).toLocaleTimeString(
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )
+                              : "---"}
+                          </span>
                         </div>
                       </div>
                       <div className="pt-2">
-                        <span className="text-muted-foreground flex items-center gap-1 mb-2"><Users className="h-3 w-3" /> Participants ({session.participantCount})</span>
+                        <span className="text-muted-foreground flex items-center gap-1 mb-2">
+                          <Users className="h-3 w-3" /> Participants (
+                          {session.participantCount})
+                        </span>
                         <div className="flex flex-wrap gap-1">
-                          {session.participants.length > 0 ? (
-                            session.participants.map((name: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-[10px]">{name}</Badge>
-                            ))
+                          {session.students.length > 0 ? (
+                            session.students.map(
+                              (student: { name: string }, i: number) => (
+                                <Badge
+                                  key={i}
+                                  variant="outline"
+                                  className="text-[10px]"
+                                >
+                                  {student.name}
+                                </Badge>
+                              )
+                            )
                           ) : (
-                            <span className="text-xs italic text-muted-foreground">No students logged</span>
+                            <span className="text-xs italic text-muted-foreground">
+                              No students logged
+                            </span>
                           )}
                         </div>
                       </div>
@@ -798,7 +1108,10 @@ export default function MyClassesPage() {
       </Dialog>
 
       {/* Edit Links Modal */}
-      <Dialog open={isEditLinksModalOpen} onOpenChange={setIsEditLinksModalOpen}>
+      <Dialog
+        open={isEditLinksModalOpen}
+        onOpenChange={setIsEditLinksModalOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Resource Links</DialogTitle>
@@ -827,9 +1140,18 @@ export default function MyClassesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsEditLinksModalOpen(false)}>Cancel</Button>
+            <Button
+              variant="ghost"
+              onClick={() => setIsEditLinksModalOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleSaveLinks} disabled={savingLinks}>
-              {savingLinks ? <Loader2 className="animate-spin" /> : "Save Links"}
+              {savingLinks ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                "Save Links"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

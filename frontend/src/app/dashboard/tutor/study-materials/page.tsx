@@ -2,6 +2,8 @@
 
 import { useEffect, useState, FormEvent, ChangeEvent } from "react";
 import type { AxiosProgressEvent } from "axios";
+import { useRouter } from "next/navigation";
+import { useTabSession } from "@/hooks/useTabSession";
 import api, { BACKEND_URL } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import Link from "next/link";
 
 export default function TutorStudyMaterialUpload() {
+  const { data: session, status } = useTabSession();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subjects, setSubjects] = useState("");
@@ -50,7 +53,7 @@ export default function TutorStudyMaterialUpload() {
       }
     };
     load();
-  }, []);
+  }, [session, status]);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -271,6 +274,8 @@ export default function TutorStudyMaterialUpload() {
             <div>
               <Label htmlFor="file-input">File (optional)</Label>
               <input
+                title="Upload file"
+                placeholder="Choose file..."
                 id="file-input"
                 type="file"
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -278,6 +283,7 @@ export default function TutorStudyMaterialUpload() {
                 }
               />
             </div>
+
             <div>
               <Button type="submit" disabled={loading}>
                 {loading ? "Uploading…" : "Save"}
@@ -310,7 +316,9 @@ export default function TutorStudyMaterialUpload() {
                   )}
                   {m.type === "video" && m.filePath && (
                     <video controls className="w-full max-h-40 mb-2 rounded">
-                      <source src={`${BACKEND_URL}/uploads/study-materials/${m.filePath}`} />
+                      <source
+                        src={`${BACKEND_URL}/uploads/study-materials/${m.filePath}`}
+                      />
                       Your browser does not support the video tag.
                     </video>
                   )}
@@ -419,3 +427,4 @@ export default function TutorStudyMaterialUpload() {
     </div>
   );
 }
+

@@ -7,7 +7,15 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,32 +39,44 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password");
         setIsLoading(false);
-        return;
-      }
-
-      try {
-        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/, '') + '/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (res.ok && data?.token) {
-          sessionStorage.setItem('token', data.token);
-          sessionStorage.setItem('kk_user', JSON.stringify({
-            name: data.name,
-            email: data.email,
-            role: data.role,
-            id: data._id
-          }));
+      } else {
+        // Try to fetch custom token if needed, or just redirect
+        try {
+          const res = await fetch(
+            (
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+            ).replace(/\/+$/, "") + "/api/auth/login",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            }
+          );
+          const data = await res.json();
+          if (res.ok && data?.token) {
+            sessionStorage.setItem("token", data.token);
+            sessionStorage.setItem(
+              "kk_user",
+              JSON.stringify({
+                name: data.name,
+                email: data.email,
+                role: data.role,
+                id: data._id,
+              })
+            );
+            window.dispatchEvent(new Event("storage"));
+          }
+        } catch (e) {
+          console.warn(
+            "Backend JWT fetch failed, continuing with session only"
+          );
         }
-      } catch (e) {
-        console.warn('Backend JWT fetch failed, continuing with session only');
-      }
 
-      router.push("/dashboard");
-    } catch (error) {
+        router.push("/dashboard");
+      }
+    } catch (error: any) {
       setError("An error occurred. Please try again.");
+      console.error(error);
       setIsLoading(false);
     }
   };
@@ -64,8 +84,10 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">KK360 Platform</CardTitle>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">
+            KK360 Platform
+          </CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to sign in to your account
           </CardDescription>
@@ -86,7 +108,10 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-blue-600 hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -98,7 +123,12 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 p-3 rounded-md">
+                <AlertCircle className="h-4 w-4" />
+                <p>{error}</p>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
@@ -107,8 +137,11 @@ export default function LoginPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-blue-600 hover:underline">
-              Register
+            <Link
+              href="/register/volunteer"
+              className="text-blue-600 hover:underline"
+            >
+              Register as Volunteer
             </Link>
           </p>
         </CardFooter>

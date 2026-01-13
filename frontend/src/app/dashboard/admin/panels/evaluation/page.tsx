@@ -1,13 +1,28 @@
 "use client";
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Star, CheckCircle, XCircle, User, Mail, Phone, BookOpen, Calendar, Clock } from "lucide-react";
+import {
+  Star,
+  CheckCircle,
+  XCircle,
+  User,
+  Mail,
+  Phone,
+  BookOpen,
+  Calendar,
+  Clock,
+} from "lucide-react";
 
 interface Student {
   id: string;
@@ -30,7 +45,7 @@ interface EvaluationForm {
   confidenceLevel: number;
   familySupport: number;
   financialNeed: number;
-  overallRecommendation: 'select' | 'reject' | 'waitlist';
+  overallRecommendation: "select" | "reject" | "waitlist";
   detailedComments: string;
   followUpRequired: boolean;
   followUpDetails: string;
@@ -48,7 +63,8 @@ const sampleStudent: Student = {
   board: "State Board",
   medium: "Tamil",
   televerificationScore: 85,
-  televerificationComments: "Good communication skills, shows genuine interest in learning, family is supportive"
+  televerificationComments:
+    "Good communication skills, shows genuine interest in learning, family is supportive",
 };
 
 export default function PanelInterviewEvaluation() {
@@ -58,17 +74,17 @@ export default function PanelInterviewEvaluation() {
     confidenceLevel: 0,
     familySupport: 0,
     financialNeed: 0,
-    overallRecommendation: 'waitlist',
-    detailedComments: '',
+    overallRecommendation: "waitlist",
+    detailedComments: "",
     followUpRequired: false,
-    followUpDetails: ''
+    followUpDetails: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleScoreChange = (field: keyof EvaluationForm, value: number) => {
-    setEvaluation(prev => ({ ...prev, [field]: value }));
+    setEvaluation((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = () => {
@@ -87,9 +103,12 @@ export default function PanelInterviewEvaluation() {
   };
 
   const getScoreBadge = (score: number) => {
-    if (score >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
-    if (score >= 60) return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>;
-    if (score >= 40) return <Badge className="bg-orange-100 text-orange-800">Average</Badge>;
+    if (score >= 80)
+      return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (score >= 60)
+      return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>;
+    if (score >= 40)
+      return <Badge className="bg-orange-100 text-orange-800">Average</Badge>;
     return <Badge className="bg-red-100 text-red-800">Needs Improvement</Badge>;
   };
 
@@ -99,9 +118,12 @@ export default function PanelInterviewEvaluation() {
         <Card className="max-w-md w-full mx-4">
           <CardContent className="p-8 text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Evaluation Submitted</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Evaluation Submitted
+            </h2>
             <p className="text-gray-600 mb-6">
-              Thank you for completing the panel interview evaluation. Your feedback has been recorded successfully.
+              Thank you for completing the panel interview evaluation. Your
+              feedback has been recorded successfully.
             </p>
             <Button onClick={() => setSubmitted(false)}>
               Evaluate Another Student
@@ -117,8 +139,12 @@ export default function PanelInterviewEvaluation() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Panel Interview Evaluation</h1>
-          <p className="text-gray-600 mt-2">Evaluate student performance in panel interview</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Panel Interview Evaluation
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Evaluate student performance in panel interview
+          </p>
         </div>
 
         {/* Student Information */}
@@ -143,14 +169,18 @@ export default function PanelInterviewEvaluation() {
                 </div>
                 <div className="flex items-center">
                   <BookOpen className="h-4 w-4 text-gray-400 mr-2" />
-                  <span className="text-gray-600">Class {sampleStudent.class}</span>
+                  <span className="text-gray-600">
+                    Class {sampleStudent.class}
+                  </span>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <div>
                   <span className="font-medium">Application Number: </span>
-                  <Badge className="ml-2">{sampleStudent.applicationNumber}</Badge>
+                  <Badge className="ml-2">
+                    {sampleStudent.applicationNumber}
+                  </Badge>
                 </div>
                 <div>
                   <span className="font-medium">School: </span>
@@ -166,19 +196,27 @@ export default function PanelInterviewEvaluation() {
                 </div>
                 <div>
                   <span className="font-medium">Subjects: </span>
-                  <span className="text-gray-600">{sampleStudent.subjects.join(', ')}</span>
+                  <span className="text-gray-600">
+                    {sampleStudent.subjects.join(", ")}
+                  </span>
                 </div>
               </div>
             </div>
-            
+
             {/* Televerification Summary */}
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Televerification Summary</h4>
+              <h4 className="font-medium text-blue-900 mb-2">
+                Televerification Summary
+              </h4>
               <div className="flex items-center gap-4">
-                <span className="text-blue-800">Score: {sampleStudent.televerificationScore}/100</span>
+                <span className="text-blue-800">
+                  Score: {sampleStudent.televerificationScore}/100
+                </span>
                 {getScoreBadge(sampleStudent.televerificationScore || 0)}
               </div>
-              <p className="text-blue-700 text-sm mt-2">{sampleStudent.televerificationComments}</p>
+              <p className="text-blue-700 text-sm mt-2">
+                {sampleStudent.televerificationComments}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -193,21 +231,34 @@ export default function PanelInterviewEvaluation() {
               {/* Communication Skills */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <Label className="text-lg font-medium">Communication Skills</Label>
+                  <Label className="text-lg font-medium">
+                    Communication Skills
+                  </Label>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-lg ${getScoreColor(evaluation.communicationSkills)}`}>
+                    <span
+                      className={`font-bold text-lg ${getScoreColor(
+                        evaluation.communicationSkills
+                      )}`}
+                    >
                       {evaluation.communicationSkills}/100
                     </span>
-                    {evaluation.communicationSkills > 0 && getScoreBadge(evaluation.communicationSkills)}
+                    {evaluation.communicationSkills > 0 &&
+                      getScoreBadge(evaluation.communicationSkills)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   {[20, 40, 60, 80, 100].map((score) => (
                     <Button
                       key={score}
-                      variant={evaluation.communicationSkills === score ? "default" : "outline"}
+                      variant={
+                        evaluation.communicationSkills === score
+                          ? "default"
+                          : "outline"
+                      }
                       size="sm"
-                      onClick={() => handleScoreChange('communicationSkills', score)}
+                      onClick={() =>
+                        handleScoreChange("communicationSkills", score)
+                      }
                       className="flex-1"
                     >
                       {score}
@@ -215,28 +266,42 @@ export default function PanelInterviewEvaluation() {
                   ))}
                 </div>
                 <p className="text-sm text-gray-600">
-                  Assess the student's ability to express thoughts clearly, language proficiency, and listening skills
+                  Assess the student ability to express thoughts clearly,
+                  language proficiency, and listening skills
                 </p>
               </div>
 
               {/* Subject Knowledge */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <Label className="text-lg font-medium">Subject Knowledge</Label>
+                  <Label className="text-lg font-medium">
+                    Subject Knowledge
+                  </Label>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-lg ${getScoreColor(evaluation.subjectKnowledge)}`}>
+                    <span
+                      className={`font-bold text-lg ${getScoreColor(
+                        evaluation.subjectKnowledge
+                      )}`}
+                    >
                       {evaluation.subjectKnowledge}/100
                     </span>
-                    {evaluation.subjectKnowledge > 0 && getScoreBadge(evaluation.subjectKnowledge)}
+                    {evaluation.subjectKnowledge > 0 &&
+                      getScoreBadge(evaluation.subjectKnowledge)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   {[20, 40, 60, 80, 100].map((score) => (
                     <Button
                       key={score}
-                      variant={evaluation.subjectKnowledge === score ? "default" : "outline"}
+                      variant={
+                        evaluation.subjectKnowledge === score
+                          ? "default"
+                          : "outline"
+                      }
                       size="sm"
-                      onClick={() => handleScoreChange('subjectKnowledge', score)}
+                      onClick={() =>
+                        handleScoreChange("subjectKnowledge", score)
+                      }
                       className="flex-1"
                     >
                       {score}
@@ -244,28 +309,42 @@ export default function PanelInterviewEvaluation() {
                   ))}
                 </div>
                 <p className="text-sm text-gray-600">
-                  Evaluate understanding of chosen subjects, problem-solving ability, and learning aptitude
+                  Evaluate understanding of chosen subjects, problem-solving
+                  ability, and learning aptitude
                 </p>
               </div>
 
               {/* Confidence Level */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <Label className="text-lg font-medium">Confidence Level</Label>
+                  <Label className="text-lg font-medium">
+                    Confidence Level
+                  </Label>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-lg ${getScoreColor(evaluation.confidenceLevel)}`}>
+                    <span
+                      className={`font-bold text-lg ${getScoreColor(
+                        evaluation.confidenceLevel
+                      )}`}
+                    >
                       {evaluation.confidenceLevel}/100
                     </span>
-                    {evaluation.confidenceLevel > 0 && getScoreBadge(evaluation.confidenceLevel)}
+                    {evaluation.confidenceLevel > 0 &&
+                      getScoreBadge(evaluation.confidenceLevel)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   {[20, 40, 60, 80, 100].map((score) => (
                     <Button
                       key={score}
-                      variant={evaluation.confidenceLevel === score ? "default" : "outline"}
+                      variant={
+                        evaluation.confidenceLevel === score
+                          ? "default"
+                          : "outline"
+                      }
                       size="sm"
-                      onClick={() => handleScoreChange('confidenceLevel', score)}
+                      onClick={() =>
+                        handleScoreChange("confidenceLevel", score)
+                      }
                       className="flex-1"
                     >
                       {score}
@@ -273,7 +352,8 @@ export default function PanelInterviewEvaluation() {
                   ))}
                 </div>
                 <p className="text-sm text-gray-600">
-                  Assess self-confidence, body language, and ability to handle pressure
+                  Assess confidence, body language, and ability to handle
+                  pressure
                 </p>
               </div>
 
@@ -282,19 +362,28 @@ export default function PanelInterviewEvaluation() {
                 <div className="flex justify-between items-center mb-3">
                   <Label className="text-lg font-medium">Family Support</Label>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-lg ${getScoreColor(evaluation.familySupport)}`}>
+                    <span
+                      className={`font-bold text-lg ${getScoreColor(
+                        evaluation.familySupport
+                      )}`}
+                    >
                       {evaluation.familySupport}/100
                     </span>
-                    {evaluation.familySupport > 0 && getScoreBadge(evaluation.familySupport)}
+                    {evaluation.familySupport > 0 &&
+                      getScoreBadge(evaluation.familySupport)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   {[20, 40, 60, 80, 100].map((score) => (
                     <Button
                       key={score}
-                      variant={evaluation.familySupport === score ? "default" : "outline"}
+                      variant={
+                        evaluation.familySupport === score
+                          ? "default"
+                          : "outline"
+                      }
                       size="sm"
-                      onClick={() => handleScoreChange('familySupport', score)}
+                      onClick={() => handleScoreChange("familySupport", score)}
                       className="flex-1"
                     >
                       {score}
@@ -302,7 +391,8 @@ export default function PanelInterviewEvaluation() {
                   ))}
                 </div>
                 <p className="text-sm text-gray-600">
-                  Evaluate family's commitment to student's education and support for KK program participation
+                  Evaluate family commitment to education and support for KK
+                  participation
                 </p>
               </div>
 
@@ -311,19 +401,28 @@ export default function PanelInterviewEvaluation() {
                 <div className="flex justify-between items-center mb-3">
                   <Label className="text-lg font-medium">Financial Need</Label>
                   <div className="flex items-center gap-2">
-                    <span className={`font-bold text-lg ${getScoreColor(evaluation.financialNeed)}`}>
+                    <span
+                      className={`font-bold text-lg ${getScoreColor(
+                        evaluation.financialNeed
+                      )}`}
+                    >
                       {evaluation.financialNeed}/100
                     </span>
-                    {evaluation.financialNeed > 0 && getScoreBadge(evaluation.financialNeed)}
+                    {evaluation.financialNeed > 0 &&
+                      getScoreBadge(evaluation.financialNeed)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   {[20, 40, 60, 80, 100].map((score) => (
                     <Button
                       key={score}
-                      variant={evaluation.financialNeed === score ? "default" : "outline"}
+                      variant={
+                        evaluation.financialNeed === score
+                          ? "default"
+                          : "outline"
+                      }
                       size="sm"
-                      onClick={() => handleScoreChange('financialNeed', score)}
+                      onClick={() => handleScoreChange("financialNeed", score)}
                       className="flex-1"
                     >
                       {score}
@@ -331,7 +430,8 @@ export default function PanelInterviewEvaluation() {
                   ))}
                 </div>
                 <p className="text-sm text-gray-600">
-                  Assess the student's financial situation and need for free tutoring support
+                  Assess the financial situation and need for free tutoring
+                  support
                 </p>
               </div>
             </div>
@@ -347,10 +447,13 @@ export default function PanelInterviewEvaluation() {
             <div className="space-y-4">
               <div>
                 <Label>Final Recommendation</Label>
-                <Select 
-                  value={evaluation.overallRecommendation} 
-                  onValueChange={(value: 'select' | 'reject' | 'waitlist') => 
-                    setEvaluation(prev => ({ ...prev, overallRecommendation: value }))
+                <Select
+                  value={evaluation.overallRecommendation}
+                  onValueChange={(value: "select" | "reject" | "waitlist") =>
+                    setEvaluation((prev) => ({
+                      ...prev,
+                      overallRecommendation: value,
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -378,34 +481,52 @@ export default function PanelInterviewEvaluation() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>Detailed Comments</Label>
                 <Textarea
                   placeholder="Provide detailed feedback about the student's performance, strengths, areas for improvement, and reasoning for your recommendation..."
                   value={evaluation.detailedComments}
-                  onChange={(e) => setEvaluation(prev => ({ ...prev, detailedComments: e.target.value }))}
+                  onChange={(e) =>
+                    setEvaluation((prev) => ({
+                      ...prev,
+                      detailedComments: e.target.value,
+                    }))
+                  }
                   rows={4}
                 />
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   id="followUp"
+                  title="Follow-up required"
+                  placeholder="Follow-up required"
                   checked={evaluation.followUpRequired}
-                  onChange={(e) => setEvaluation(prev => ({ ...prev, followUpRequired: e.target.checked }))}
+                  onChange={(e) =>
+                    setEvaluation((prev) => ({
+                      ...prev,
+                      followUpRequired: e.target.checked,
+                    }))
+                  }
                 />
+
                 <Label htmlFor="followUp">Follow-up required</Label>
               </div>
-              
+
               {evaluation.followUpRequired && (
                 <div>
                   <Label>Follow-up Details</Label>
                   <Textarea
                     placeholder="Specify what follow-up actions are needed and timeline..."
                     value={evaluation.followUpDetails}
-                    onChange={(e) => setEvaluation(prev => ({ ...prev, followUpDetails: e.target.value }))}
+                    onChange={(e) =>
+                      setEvaluation((prev) => ({
+                        ...prev,
+                        followUpDetails: e.target.value,
+                      }))
+                    }
                     rows={2}
                   />
                 </div>
@@ -416,9 +537,10 @@ export default function PanelInterviewEvaluation() {
 
         {/* Submit Button */}
         <div className="flex justify-end">
-          <Button 
+          <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || 
+            disabled={
+              isSubmitting ||
               evaluation.communicationSkills === 0 ||
               evaluation.subjectKnowledge === 0 ||
               evaluation.confidenceLevel === 0 ||

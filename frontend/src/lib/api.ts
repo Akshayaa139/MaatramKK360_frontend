@@ -17,7 +17,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     (typeof headersObj.get === "function"
       ? headersObj.get("Authorization")
       : (headersObj["Authorization"] as string | undefined) ||
-      (headersObj["authorization"] as string | undefined));
+        (headersObj["authorization"] as string | undefined));
   if (!existingAuth) {
     const token =
       typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
@@ -29,15 +29,39 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       if (maybe && typeof maybe.set === "function") {
         maybe.set("Authorization", `Bearer ${token}`);
       } else {
-        // config.headers may be AxiosHeaders; cast to any before assigning plain object
-        config.headers = {
-          ...((config.headers as any) || {}),
-          Authorization: `Bearer ${token}`,
-        } as any;
+        // config.headers may be AxiosHeaders
+        if (config.headers) {
+          config.headers["Authorization"] = `Bearer ${token}`;
+        } else {
+          config.headers = {
+            Authorization: `Bearer ${token}`,
+          } as unknown as InternalAxiosRequestConfig["headers"];
+        }
       }
     }
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== "undefined") {
+        // Only redirect if we have a token that is now invalid
+        // to avoid loops if the user is already on login page or public page
+        const token = sessionStorage.getItem("token");
+        if (token) {
+          console.warn("Session expired, clearing storage and redirecting");
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("kk_user");
+          window.dispatchEvent(new Event("session-expired"));
+          window.location.href = "/login";
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

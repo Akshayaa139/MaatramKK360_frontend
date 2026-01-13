@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,11 +35,18 @@ import {
   FileText,
   Video,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import AutoMapButton from "@/components/admin/AutoMapButton";
+import { useTabSession } from "@/hooks/useTabSession";
 
 interface Application {
   id: string;
@@ -85,7 +91,13 @@ interface StudentDetail {
   attendanceRate?: number; // Restored
   assignmentReport?: { assignmentId: string; title: string }[];
   testReport?: { testId: string; title: string; marks: string }[];
-  history?: { date: string; title: string; type: string; score: number; maxScore: number }[]; // Added
+  history?: {
+    date: string;
+    title: string;
+    type: string;
+    score: number;
+    maxScore: number;
+  }[]; // Added
   notes?: string; // Added
 }
 
@@ -94,11 +106,19 @@ interface APIApplication {
   id?: string;
   applicationNumber?: string;
   applicationId?: string;
-  personalInfo?: { fullName?: string; email?: string; phone?: string };
   name?: string;
   email?: string;
   phone?: string;
-  educationalInfo?: { currentClass?: string; subjects?: ({ name: string } | string)[]; medium?: string };
+  personalInfo?: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  educationalInfo?: {
+    currentClass?: string;
+    subjects?: ({ name: string } | string)[];
+    medium?: string;
+  };
   status?: string;
   createdAt?: string;
   submissionDate?: string;
@@ -106,7 +126,7 @@ interface APIApplication {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session } = useTabSession();
   const [applications, setApplications] = useState<Application[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<
     Application[]
@@ -143,9 +163,12 @@ export default function AdminDashboard() {
     }[]
   >([]);
   const [studentDetailId, setStudentDetailId] = useState<string>("");
-  const [studentDetail, setStudentDetail] = useState<StudentDetail | null>(null);
+  const [studentDetail, setStudentDetail] = useState<StudentDetail | null>(
+    null
+  );
   const [liveSessions, setLiveSessions] = useState<any[]>([]);
-  const [selectedTutorForDetails, setSelectedTutorForDetails] = useState<any>(null); // Added
+  const [selectedTutorForDetails, setSelectedTutorForDetails] =
+    useState<any>(null); // Added
   const [isTutorDetailsOpen, setIsTutorDetailsOpen] = useState(false); // Added
 
   useEffect(() => {
@@ -205,7 +228,9 @@ export default function AdminDashboard() {
           phone: a.personalInfo?.phone || a.phone || "",
           currentClass: a.educationalInfo?.currentClass || "",
           subjects: Array.isArray(a.educationalInfo?.subjects)
-            ? a.educationalInfo!.subjects!.map((s: { name: string } | string) => (typeof s === 'object' && 'name' in s ? s.name : s))
+            ? a.educationalInfo!.subjects!.map((s: { name: string } | string) =>
+              typeof s === "object" && "name" in s ? s.name : s
+            )
             : [],
           medium: a.educationalInfo?.medium || "",
           status: normalizeStatus(a.status || ""),
@@ -409,7 +434,9 @@ export default function AdminDashboard() {
               <div className="text-3xl font-bold text-blue-900">
                 {stats.total}
               </div>
-              <p className="text-xs text-blue-600 mt-1 font-medium">+12% from last month</p>
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                +12% from last month
+              </p>
             </CardContent>
           </Card>
 
@@ -426,7 +453,9 @@ export default function AdminDashboard() {
               <div className="text-3xl font-bold text-yellow-900">
                 {stats.underReview}
               </div>
-              <p className="text-xs text-yellow-600 mt-1 font-medium">Awaiting initial review</p>
+              <p className="text-xs text-yellow-600 mt-1 font-medium">
+                Awaiting initial review
+              </p>
             </CardContent>
           </Card>
 
@@ -462,7 +491,9 @@ export default function AdminDashboard() {
               <div className="text-3xl font-bold text-green-900">
                 {stats.selected}
               </div>
-              <p className="text-xs text-green-600 mt-1 font-medium">Successfully admitted</p>
+              <p className="text-xs text-green-600 mt-1 font-medium">
+                Successfully admitted
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -480,20 +511,33 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             {liveSessions.length === 0 ? (
-              <p className="text-sm text-red-600/80">No active classes at the moment.</p>
+              <p className="text-sm text-red-600/80">
+                No active classes at the moment.
+              </p>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {/* Deduplicate sessions by class ID just in case */}
-                {Array.from(new Map(liveSessions.map(s => [s.class?._id || s._id, s])).values()).map((ls) => (
-                  <div key={ls._id} className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-red-500 border-t border-r border-b border-gray-100 flex flex-col gap-4">
+                {Array.from(
+                  new Map(
+                    liveSessions.map((s) => [s.class?._id || s._id, s])
+                  ).values()
+                ).map((ls) => (
+                  <div
+                    key={ls._id}
+                    className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-l-red-500 border-t border-r border-b border-gray-100 flex flex-col gap-4"
+                  >
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-bold text-gray-900">{ls.class?.title || "Class"}</div>
+                        <div className="font-bold text-gray-900">
+                          {ls.class?.title || "Class"}
+                        </div>
                         <div className="text-sm text-gray-600">
                           {ls.tutor?.user?.name || "Unknown Tutor"}
                         </div>
                       </div>
-                      <Badge variant="destructive" className="animate-pulse">Live</Badge>
+                      <Badge variant="destructive" className="animate-pulse">
+                        Live
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs mt-2 text-gray-500">
                       <div className="flex items-center gap-1">
@@ -502,11 +546,22 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>Started {new Date(ls.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>
+                          Started{" "}
+                          {new Date(ls.startTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
                     </div>
-                    <Button className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white border-none text-xs h-8" asChild>
-                      <Link href={`/dashboard/meeting/${ls.class?._id || ls.class}`}>
+                    <Button
+                      className="mt-2 w-full bg-red-600 hover:bg-red-700 text-white border-none text-xs h-8"
+                      asChild
+                    >
+                      <Link
+                        href={`/dashboard/meeting/${ls.class?._id || ls.class}`}
+                      >
                         <Video className="h-3 w-3 mr-1" />
                         Join Session
                       </Link>
@@ -657,10 +712,14 @@ export default function AdminDashboard() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span>{(td.classes || []).length} Classes</span>
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setSelectedTutorForDetails(td);
-                            setIsTutorDetailsOpen(true);
-                          }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedTutorForDetails(td);
+                              setIsTutorDetailsOpen(true);
+                            }}
+                          >
                             <Eye className="h-4 w-4 text-blue-600" />
                           </Button>
                         </div>
@@ -680,13 +739,19 @@ export default function AdminDashboard() {
             )}
 
             {/* Tutor Class Details Dialog */}
-            <Dialog open={isTutorDetailsOpen} onOpenChange={setIsTutorDetailsOpen}>
+            <Dialog
+              open={isTutorDetailsOpen}
+              onOpenChange={setIsTutorDetailsOpen}
+            >
               <DialogContent className="max-w-3xl">
                 <DialogHeader>
-                  <DialogTitle>Class Schedule & Students - {selectedTutorForDetails?.name}</DialogTitle>
+                  <DialogTitle>
+                    Class Schedule & Students - {selectedTutorForDetails?.name}
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[60vh] overflow-y-auto">
-                  {selectedTutorForDetails?.classes && selectedTutorForDetails.classes.length > 0 ? (
+                  {selectedTutorForDetails?.classes &&
+                    selectedTutorForDetails.classes.length > 0 ? (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -698,24 +763,34 @@ export default function AdminDashboard() {
                       <TableBody>
                         {selectedTutorForDetails.classes.map((cls: any) => (
                           <TableRow key={cls.id}>
-                            <TableCell className="font-medium">{cls.title}</TableCell>
+                            <TableCell className="font-medium">
+                              {cls.title}
+                            </TableCell>
                             <TableCell>
                               <div className="text-sm">
                                 {cls.schedule?.day || "No Day"} <br />
-                                <span className="text-muted-foreground text-xs">{cls.schedule?.startTime} - {cls.schedule?.endTime}</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {cls.schedule?.startTime} -{" "}
+                                  {cls.schedule?.endTime}
+                                </span>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col gap-1">
                                 {(cls.students || []).length > 0 ? (
                                   (cls.students || []).map((st: any) => (
-                                    <div key={st.id} className="text-sm flex items-center gap-1">
+                                    <div
+                                      key={st.id}
+                                      className="text-sm flex items-center gap-1"
+                                    >
                                       <Users className="h-3 w-3 text-gray-400" />
                                       {st.name}
                                     </div>
                                   ))
                                 ) : (
-                                  <span className="text-muted-foreground italic text-xs">No students enrolled</span>
+                                  <span className="text-muted-foreground italic text-xs">
+                                    No students enrolled
+                                  </span>
                                 )}
                               </div>
                             </TableCell>
@@ -724,7 +799,9 @@ export default function AdminDashboard() {
                       </TableBody>
                     </Table>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground">No classes assigned.</div>
+                    <div className="text-center py-8 text-muted-foreground">
+                      No classes assigned.
+                    </div>
                   )}
                 </div>
               </DialogContent>
@@ -803,22 +880,39 @@ export default function AdminDashboard() {
                           <Clock className="h-4 w-4" /> Recent History
                         </h4>
                         <ScrollArea className="h-[200px] border rounded-md p-3">
-                          {studentDetail.history && studentDetail.history.length > 0 ? (
+                          {studentDetail.history &&
+                            studentDetail.history.length > 0 ? (
                             <div className="space-y-3">
                               {studentDetail.history.map((item, idx) => (
-                                <div key={idx} className="flex justify-between items-start border-b pb-2 last:border-0">
+                                <div
+                                  key={idx}
+                                  className="flex justify-between items-start border-b pb-2 last:border-0"
+                                >
                                   <div>
-                                    <div className="text-sm font-medium">{item.title}</div>
-                                    <div className="text-xs text-muted-foreground">{item.type} • {new Date(item.date).toLocaleDateString()}</div>
+                                    <div className="text-sm font-medium">
+                                      {item.title}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {item.type} •{" "}
+                                      {new Date(item.date).toLocaleDateString()}
+                                    </div>
                                   </div>
-                                  <Badge variant={item.score >= 70 ? "secondary" : "destructive"}>
+                                  <Badge
+                                    variant={
+                                      item.score >= 70
+                                        ? "secondary"
+                                        : "destructive"
+                                    }
+                                  >
                                     {item.score}/{item.maxScore}
                                   </Badge>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="text-sm text-muted-foreground">No recent history available.</div>
+                            <div className="text-sm text-muted-foreground">
+                              No recent history available.
+                            </div>
                           )}
                         </ScrollArea>
                       </div>
@@ -828,7 +922,8 @@ export default function AdminDashboard() {
                         </h4>
                         <div className="bg-yellow-50 p-4 rounded-md border border-yellow-100 h-[200px] overflow-y-auto">
                           <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                            {studentDetail.notes || "No notes recorded for this student."}
+                            {studentDetail.notes ||
+                              "No notes recorded for this student."}
                           </p>
                         </div>
                       </div>
@@ -946,6 +1041,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-    </div >
+    </div>
   );
 }

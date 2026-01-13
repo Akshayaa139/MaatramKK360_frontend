@@ -67,9 +67,10 @@ export default function ClassesPage() {
         setIsLoading(true);
         // Auth handled by interceptor
         let res;
-        if ((session as any)?.user?.role === 'admin' || (session as any)?.user?.role === 'lead') {
+        const role = String((session as any)?.user?.role || "").trim().toLowerCase();
+        if (role === "admin" || role === "lead") {
           res = await api.get('/classes/all');
-        } else if ((session as any)?.user?.role === 'student') {
+        } else if (role === "student") {
           res = await api.get('/students/classes');
         } else {
           res = await api.get('/classes/tutor');
@@ -78,7 +79,7 @@ export default function ClassesPage() {
 
         let mapped: Class[] = [];
         // Helper to map data based on source (Student API returns different shape)
-        if ((session as any)?.user?.role === 'student') {
+        if (role === "student") {
           mapped = data.map((c: any) => ({
             id: c.id || c._id,
             title: c.title,
@@ -159,7 +160,6 @@ export default function ClassesPage() {
         toast({
           title: "Error",
           description: "Failed to load classes",
-          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
@@ -169,7 +169,9 @@ export default function ClassesPage() {
     fetchClasses();
   }, [status]);
 
-  const isAdmin = (session as any)?.user?.role === 'admin' || (session as any)?.user?.role === 'lead';
+  const isAdmin =
+    String((session as any)?.user?.role || "").trim().toLowerCase() === "admin" ||
+    String((session as any)?.user?.role || "").trim().toLowerCase() === "lead";
   const subjects = Array.from(new Set([...upcomingClasses, ...pastClasses].map(c => c.subject))).sort();
   const tutors = Array.from(new Set([...upcomingClasses, ...pastClasses].map(c => c.tutor))).sort();
   const filterMatch = (c: Class) => (subjectFilter === 'all' || c.subject === subjectFilter) && (tutorFilter === 'all' || c.tutor === tutorFilter);
@@ -189,7 +191,6 @@ export default function ClassesPage() {
       toast({
         title: "Error",
         description: "Failed to enroll in class",
-        variant: "destructive",
       });
     }
   };
@@ -202,7 +203,7 @@ export default function ClassesPage() {
       const res = await api.get(`/classes/${classItem.id}/sessions`);
       setClassSessions(res.data);
     } catch (e) {
-      toast({ title: "Error", description: "Failed to fetch session details.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to fetch session details." });
     } finally {
       setLoadingSessions(false);
     }
@@ -252,11 +253,11 @@ export default function ClassesPage() {
       <h1 className="text-2xl font-bold">{isAdmin ? 'All Classes' : 'My Classes'}</h1>
       {isAdmin && (
         <div className="flex flex-col md:flex-row gap-3 md:items-center">
-          <select className="w-full md:w-40 rounded-md border px-3 py-2" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)}>
+          <select title="Filter by subject" className="w-full md:w-40 rounded-md border px-3 py-2" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)}>
             <option value="all">All Subjects</option>
             {subjects.map(s => (<option key={s} value={s}>{s}</option>))}
           </select>
-          <select className="w-full md:w-40 rounded-md border px-3 py-2" value={tutorFilter} onChange={(e) => setTutorFilter(e.target.value)}>
+          <select title="Filter by tutor" className="w-full md:w-40 rounded-md border px-3 py-2" value={tutorFilter} onChange={(e) => setTutorFilter(e.target.value)}>
             <option value="all">All Tutors</option>
             {tutors.map(t => (<option key={t} value={t}>{t}</option>))}
           </select>

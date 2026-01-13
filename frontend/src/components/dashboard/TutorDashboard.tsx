@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import api from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,16 +21,11 @@ import {
   Users,
   User,
   FileText,
-  MessageSquare,
   Calendar,
-  Clock,
   CheckCircle,
-  AlertCircle,
   Eye,
-  Edit,
   MessageCircle,
   Video,
-  BookOpen,
   Award,
   TrendingUp,
 } from "lucide-react";
@@ -74,7 +69,7 @@ interface Performance {
 }
 
 export default function TutorDashboard() {
-  const { data: session } = useSession();
+  const { data: session } = useTabSession();
   const { t } = useTranslation();
   const [students, setStudents] = useState<Student[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<TutorSession[]>([]);
@@ -95,15 +90,12 @@ export default function TutorDashboard() {
 
   const fetchTutorData = async () => {
     try {
-      const token = (session as unknown as { accessToken?: string })
-        ?.accessToken;
-      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
       const [studentsRes, sessionsRes, applicationsRes, performanceRes] =
         await Promise.all([
-          api.get("/tutor/students", { headers }),
-          api.get("/tutor/sessions/upcoming", { headers }),
-          api.get("/tutor/applications", { headers }),
-          api.get("/tutor/performance", { headers }),
+          api.get("/tutor/students"),
+          api.get("/tutor/sessions/upcoming"),
+          api.get("/tutor/applications"),
+          api.get("/tutor/performance"),
         ]);
       setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : []);
       setUpcomingSessions(

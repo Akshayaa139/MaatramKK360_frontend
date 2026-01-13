@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useTabSession } from "@/hooks/useTabSession";
 import {
   Card,
   CardContent,
@@ -15,7 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Clock, Calendar, MessageCircle } from "lucide-react";
 import api from "@/lib/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -40,7 +47,7 @@ type Tutor = {
 };
 
 export default function TutorsPage() {
-  const { data: session } = useSession();
+  const { data: session } = useTabSession();
   const [query, setQuery] = useState("");
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -63,17 +70,22 @@ export default function TutorsPage() {
 
     setSending(true);
     try {
-      const authHeader = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
-      await api.post('/messages', {
+      await api.post("/messages", {
         receiver: selectedTutor.userId || selectedTutor.id, // Use userId if available
-        content: messageContent
-      }, { headers: authHeader });
+        content: messageContent,
+      });
 
-      toast({ title: "Message sent", description: `Message sent to ${selectedTutor.name}` });
+      toast({
+        title: "Message sent",
+        description: `Message sent to ${selectedTutor.name}`,
+      });
       setIsMessageOpen(false);
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+      });
     } finally {
       setSending(false);
     }
@@ -93,8 +105,8 @@ export default function TutorsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const authHeader = session?.accessToken
-          ? { Authorization: `Bearer ${session.accessToken}` }
+        const authHeader = (session?.user as any)?.accessToken
+          ? { Authorization: `Bearer ${(session?.user as any)?.accessToken}` }
           : undefined;
         const res = await api.get("/admin/tutors/details", {
           headers: authHeader,
@@ -237,7 +249,11 @@ export default function TutorsPage() {
                 )}
             </CardContent>
             <CardFooter>
-              <Button variant="outline" className="w-full" onClick={() => handleContact(tutor)}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleContact(tutor)}
+              >
                 <MessageCircle className="h-4 w-4 mr-2" /> Match / Contact
               </Button>
             </CardFooter>
@@ -262,8 +278,13 @@ export default function TutorsPage() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMessageOpen(false)}>Cancel</Button>
-            <Button onClick={handleSendMessage} disabled={sending || !messageContent.trim()}>
+            <Button variant="outline" onClick={() => setIsMessageOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendMessage}
+              disabled={sending || !messageContent.trim()}
+            >
               {sending ? "Sending..." : "Send Message"}
             </Button>
           </DialogFooter>

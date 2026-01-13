@@ -4,12 +4,7 @@
 import { useTabSession } from "@/hooks/useTabSession";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Users,
-  BookOpen,
-  Calendar,
-  MessageSquare
-} from "lucide-react";
+import { Users, BookOpen, Calendar, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -39,21 +34,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const role = (session?.user as any)?.role;
-    if (role === 'admin' || role === 'lead') {
-      router.replace('/dashboard/admin');
+    const role = String(session?.user?.role || "")
+      .trim()
+      .toLowerCase();
+    if (role === "admin" || role === "lead") {
+      router.replace("/dashboard/admin");
       return;
     }
-    if (role === 'tutor') {
-      router.replace('/dashboard/tutor');
+    if (role === "tutor") {
+      router.replace("/dashboard/tutor");
       return;
     }
-    if (role === 'student') {
-      router.replace('/dashboard/student');
+    if (role === "student") {
+      router.replace("/dashboard/student");
       return;
     }
-    if (role === 'volunteer' || role === 'alumni') {
-      router.replace('/dashboard/volunteer');
+    if (role === "volunteer" || role === "alumni") {
+      router.replace("/dashboard/volunteer");
       return;
     }
     const fetchData = async () => {
@@ -65,7 +62,12 @@ export default function DashboardPage() {
           api.get("/dashboard/upcoming-sessions"),
         ]);
 
-        const { tutorCount, studentCount, upcomingClassesCount, engagementRate } = statsRes.data;
+        const {
+          tutorCount,
+          studentCount,
+          upcomingClassesCount,
+          engagementRate,
+        } = statsRes.data;
         setStats([
           {
             title: "Total Tutors",
@@ -95,10 +97,11 @@ export default function DashboardPage() {
 
         setRecentActivities(activitiesRes.data);
         setUpcomingSessions(sessionsRes.data);
-
       } catch (error: any) {
         if (error?.response?.status === 401) {
-          console.warn("Unauthorized: admin token required for dashboard stats");
+          console.warn(
+            "Unauthorized: admin token required for dashboard stats"
+          );
         } else {
           console.error("Failed to fetch dashboard data", error);
         }
@@ -114,10 +117,10 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-heading font-bold text-gray-900 tracking-tight">
-          Welcome back, {session?.user?.name || "User"}
+          Here's what's happening with your KK360 platform today.
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          Here's what's happening with your KK360 platform today.
+          Here is what is happening with your KK360 platform today.
         </p>
       </div>
 
@@ -128,13 +131,17 @@ export default function DashboardPage() {
           {stats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-gray-500 uppercase tracking-wider">{stat.title}</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  {stat.title}
+                </CardTitle>
                 <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center">
                   <stat.icon className="h-4 w-4 text-gray-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-heading font-bold text-gray-900">{stat.value}</div>
+                <div className="text-3xl font-heading font-bold text-gray-900">
+                  {stat.value}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
               </CardContent>
             </Card>
@@ -156,7 +163,9 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{activity.type}</p>
-                    <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                    <p className="text-xs text-gray-500">
+                      {activity.timestamp}
+                    </p>
                   </div>
                 </div>
               ))}

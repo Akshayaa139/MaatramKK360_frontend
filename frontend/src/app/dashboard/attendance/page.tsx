@@ -195,7 +195,7 @@ export default function AttendancePage() {
       toast({ title: status === 'present' ? 'Marked Present' : 'Marked Absent' });
     } catch (err) {
       setError("Failed to update attendance.");
-      toast({ title: 'Error', description: 'Failed to update attendance', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to update attendance'});
     }
   };
 
@@ -218,7 +218,7 @@ export default function AttendancePage() {
       toast({ title: status === 'present' ? 'All marked present' : 'All marked absent' });
     } catch (err) {
       setError('Failed to bulk update attendance.');
-      toast({ title: 'Error', description: 'Failed to update attendance', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to update attendance'});
     }
   };
 
@@ -239,7 +239,7 @@ export default function AttendancePage() {
       toast({ title: "Attendance exported" });
     } catch (e) {
       console.error(e);
-      toast({ title: "Failed to export attendance", variant: "destructive" });
+      toast({ title: "Failed to export attendance" });
     }
   };
 

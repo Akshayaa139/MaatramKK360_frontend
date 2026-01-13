@@ -1,0 +1,66 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+   Γû▓ Next.js 15.5.9
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 5.8s
+   Skipping linting
+   Checking validity of types ...
+node.exe : Failed to 
+compile.
+At C:\Users\Akshayaa\AppData
+\Roaming\npm\npm.ps1:24 
+char:5
++     & "node$exe"  "$basedi
+r/node_modules/npm/bin/npm-c
+li.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Faile  
+  d to compile.:String) [   
+ ], RemoteException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+
+./src/app/dashboard/admin/te
+leverification/page.tsx:134:
+11
+Type error: Object literal 
+may only specify known 
+properties, and 'variant' 
+does not exist in type 
+'ReactElement<unknown, 
+string | 
+JSXElementConstructor<any>> 
+| Iterable<ReactNode> | 
+ReactPortal | Promise<...> 
+| { ...; }'.
+
+[0m [90m 132 |[39m       
+} [36melse[39m {
+ [90m 133 |[39m         
+toast({
+[31m[1m>[22m[39m[90m 
+134 |[39m           
+variant[33m:[39m [32m"des
+tructive"[39m[33m,[39m
+ [90m     |[39m           
+[31m[1m^[22m[39m
+ [90m 135 |[39m           
+title[33m:[39m 
+[32m"Error"[39m[33m,[39m
+ [90m 136 |[39m           
+description[33m:[39m 
+[32m"Failed to submit 
+televerification 
+evaluation."[39m[33m,[39m
+ [90m 137 |[39m         
+})[33m;[39m[0m
+Next.js build worker exited 
+with code: 1 and signal: 
+null

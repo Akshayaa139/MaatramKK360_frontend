@@ -6,10 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Phone, User, BookOpen, Clock, Star, Save, Send } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Phone,
+  User,
+  BookOpen,
+  Clock,
+  Star,
+  Save,
+  Send,
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface TeleverificationData {
@@ -24,7 +40,11 @@ interface TeleverificationData {
   familySupport: number;
   financialNeed: number;
   overallRating: number;
-  recommendation: 'strong_recommend' | 'recommend' | 'neutral' | 'not_recommend';
+  recommendation:
+  | "strong_recommend"
+  | "recommend"
+  | "neutral"
+  | "not_recommend";
   comments: string;
   followUpRequired: boolean;
   followUpNotes: string;
@@ -37,13 +57,13 @@ export default function TeleverificationPage() {
     studentName: "Arun Kumar",
     classLevel: "10",
     subjects: ["Mathematics", "Physics", "Chemistry"],
-    volunteerName: "Ramesh Kumar"
+    volunteerName: "Ramesh Kumar",
   });
   const [formData, setFormData] = useState<TeleverificationData>({
     applicationNumber: applicationData.applicationNumber,
     studentName: applicationData.studentName,
     volunteerName: applicationData.volunteerName,
-    callDate: new Date().toISOString().split('T')[0],
+    callDate: new Date().toISOString().split("T")[0],
     callDuration: "",
     communicationSkills: 0,
     subjectKnowledge: 0,
@@ -51,10 +71,10 @@ export default function TeleverificationPage() {
     familySupport: 0,
     financialNeed: 0,
     overallRating: 0,
-    recommendation: 'neutral',
+    recommendation: "neutral",
     comments: "",
     followUpRequired: false,
-    followUpNotes: ""
+    followUpNotes: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,24 +84,24 @@ export default function TeleverificationPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const avgRating = (
-      formData.communicationSkills +
-      formData.subjectKnowledge +
-      formData.confidenceLevel +
-      formData.familySupport +
-      formData.financialNeed
-    ) / 5;
+    const avgRating =
+      (formData.communicationSkills +
+        formData.subjectKnowledge +
+        formData.confidenceLevel +
+        formData.familySupport +
+        formData.financialNeed) /
+      5;
 
     const finalData = {
       ...formData,
-      overallRating: Math.round(avgRating * 10) / 10
+      overallRating: Math.round(avgRating * 10) / 10,
     };
 
     try {
-      const res = await fetch('/api/televerification', {
-        method: 'POST',
+      const res = await fetch("/api/televerification", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(finalData),
       });
@@ -96,7 +116,7 @@ export default function TeleverificationPage() {
           applicationNumber: applicationData.applicationNumber,
           studentName: applicationData.studentName,
           volunteerName: applicationData.volunteerName,
-          callDate: new Date().toISOString().split('T')[0],
+          callDate: new Date().toISOString().split("T")[0],
           callDuration: "",
           communicationSkills: 0,
           subjectKnowledge: 0,
@@ -104,22 +124,20 @@ export default function TeleverificationPage() {
           familySupport: 0,
           financialNeed: 0,
           overallRating: 0,
-          recommendation: 'neutral',
+          recommendation: "neutral",
           comments: "",
           followUpRequired: false,
-          followUpNotes: ""
+          followUpNotes: "",
         });
       } else {
         toast({
-          variant: "destructive",
           title: "Error",
           description: "Failed to submit televerification evaluation.",
         });
       }
     } catch (error) {
-      console.error('Error submitting televerification:', error);
+      console.error("Error submitting televerification:", error);
       toast({
-        variant: "destructive",
         title: "Error",
         description: "An unexpected error occurred.",
       });
@@ -128,9 +146,14 @@ export default function TeleverificationPage() {
     }
   };
 
-  const RatingScale = ({ label, value, onChange, description }: { 
-    label: string; 
-    value: number; 
+  const RatingScale = ({
+    label,
+    value,
+    onChange,
+    description,
+  }: {
+    label: string;
+    value: number;
     onChange: (value: number) => void;
     description: string;
   }) => (
@@ -138,16 +161,21 @@ export default function TeleverificationPage() {
       <div className="flex justify-between items-center">
         <Label className="text-base font-medium">{label}</Label>
         <div className="flex items-center gap-2">
-          <Badge variant={value >= 4 ? "success" : value >= 3 ? "secondary" : "destructive"}>
+          <Badge
+            variant={
+              value >= 4 ? "success" : value >= 3 ? "secondary" : "destructive"
+            }
+          >
             {value > 0 ? `${value}/5` : "Select"}
           </Badge>
           <div className="flex">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
-                className={`h-5 w-5 cursor-pointer transition-colors ${
-                  star <= value ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-300"
-                }`}
+                className={`h-5 w-5 cursor-pointer transition-colors ${star <= value
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-300 hover:text-yellow-300"
+                  }`}
                 onClick={() => onChange(star)}
               />
             ))}
@@ -165,8 +193,12 @@ export default function TeleverificationPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Televerification Evaluation</h1>
-              <p className="text-gray-600 mt-2">Evaluate student application through telephonic interview</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Televerification Evaluation
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Evaluate student application through telephonic interview
+              </p>
             </div>
             <Badge variant="outline" className="text-lg px-4 py-2">
               <Phone className="h-4 w-4 mr-2" />
@@ -183,8 +215,12 @@ export default function TeleverificationPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
-                <Label className="text-sm text-gray-600">Application Number</Label>
-                <p className="font-mono font-medium">{applicationData.applicationNumber}</p>
+                <Label className="text-sm text-gray-600">
+                  Application Number
+                </Label>
+                <p className="font-mono font-medium">
+                  {applicationData.applicationNumber}
+                </p>
               </div>
               <div>
                 <Label className="text-sm text-gray-600">Student Name</Label>
@@ -192,10 +228,14 @@ export default function TeleverificationPage() {
               </div>
               <div>
                 <Label className="text-sm text-gray-600">Class</Label>
-                <p className="font-medium">Class {applicationData.classLevel}</p>
+                <p className="font-medium">
+                  Class {applicationData.classLevel}
+                </p>
               </div>
               <div>
-                <Label className="text-sm text-gray-600">Subjects Applied</Label>
+                <Label className="text-sm text-gray-600">
+                  Subjects Applied
+                </Label>
                 <div className="flex flex-wrap gap-1">
                   {applicationData.subjects.map((subject, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
@@ -223,7 +263,12 @@ export default function TeleverificationPage() {
                     <Input
                       id="volunteerName"
                       value={formData.volunteerName}
-                      onChange={(e) => setFormData({ ...formData, volunteerName: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          volunteerName: e.target.value,
+                        })
+                      }
                       required
                     />
                   </div>
@@ -233,18 +278,27 @@ export default function TeleverificationPage() {
                       id="callDate"
                       type="date"
                       value={formData.callDate}
-                      onChange={(e) => setFormData({ ...formData, callDate: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, callDate: e.target.value })
+                      }
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="callDuration">Call Duration (minutes)</Label>
+                    <Label htmlFor="callDuration">
+                      Call Duration (minutes)
+                    </Label>
                     <Input
                       id="callDuration"
                       type="number"
                       placeholder="e.g., 25"
                       value={formData.callDuration}
-                      onChange={(e) => setFormData({ ...formData, callDuration: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          callDuration: e.target.value,
+                        })
+                      }
                       required
                     />
                   </div>
@@ -256,41 +310,53 @@ export default function TeleverificationPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Evaluation Criteria</CardTitle>
-                <p className="text-gray-600">Rate the student on a scale of 1-5 for each criterion</p>
+                <p className="text-gray-600">
+                  Rate the student on a scale of 1-5 for each criterion
+                </p>
               </CardHeader>
               <CardContent className="space-y-8">
                 <RatingScale
                   label="Communication Skills"
                   value={formData.communicationSkills}
-                  onChange={(value) => setFormData({ ...formData, communicationSkills: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, communicationSkills: value })
+                  }
                   description="Ability to express thoughts clearly and understand questions"
                 />
-                
+
                 <RatingScale
                   label="Subject Knowledge"
                   value={formData.subjectKnowledge}
-                  onChange={(value) => setFormData({ ...formData, subjectKnowledge: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, subjectKnowledge: value })
+                  }
                   description="Understanding of subjects they want to learn"
                 />
-                
+
                 <RatingScale
                   label="Confidence Level"
                   value={formData.confidenceLevel}
-                  onChange={(value) => setFormData({ ...formData, confidenceLevel: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, confidenceLevel: value })
+                  }
                   description="Self-confidence and willingness to learn"
                 />
-                
+
                 <RatingScale
                   label="Family Support"
                   value={formData.familySupport}
-                  onChange={(value) => setFormData({ ...formData, familySupport: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, familySupport: value })
+                  }
                   description="Level of family support for education"
                 />
-                
+
                 <RatingScale
                   label="Financial Need"
                   value={formData.financialNeed}
-                  onChange={(value) => setFormData({ ...formData, financialNeed: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, financialNeed: value })
+                  }
                   description="Assessed financial need for the program"
                 />
               </CardContent>
@@ -306,33 +372,60 @@ export default function TeleverificationPage() {
                   <Label>Overall Recommendation</Label>
                   <RadioGroup
                     value={formData.recommendation}
-                    onValueChange={(value) => setFormData({ ...formData, recommendation: value as any })}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        recommendation: value as
+                          | "strong_recommend"
+                          | "recommend"
+                          | "neutral"
+                          | "not_recommend",
+                      })
+                    }
                     className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
                   >
                     <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="strong_recommend" id="strong_recommend" />
-                      <Label htmlFor="strong_recommend" className="flex items-center cursor-pointer">
+                      <RadioGroupItem
+                        value="strong_recommend"
+                        id="strong_recommend"
+                      />
+                      <Label
+                        htmlFor="strong_recommend"
+                        className="flex items-center cursor-pointer"
+                      >
                         <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
                         Strongly Recommend
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="recommend" id="recommend" />
-                      <Label htmlFor="recommend" className="flex items-center cursor-pointer">
+                      <Label
+                        htmlFor="recommend"
+                        className="flex items-center cursor-pointer"
+                      >
                         <CheckCircle className="h-4 w-4 mr-2 text-blue-600" />
                         Recommend
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
                       <RadioGroupItem value="neutral" id="neutral" />
-                      <Label htmlFor="neutral" className="flex items-center cursor-pointer">
+                      <Label
+                        htmlFor="neutral"
+                        className="flex items-center cursor-pointer"
+                      >
                         <User className="h-4 w-4 mr-2 text-yellow-600" />
                         Neutral
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="not_recommend" id="not_recommend" />
-                      <Label htmlFor="not_recommend" className="flex items-center cursor-pointer">
+                      <RadioGroupItem
+                        value="not_recommend"
+                        id="not_recommend"
+                      />
+                      <Label
+                        htmlFor="not_recommend"
+                        className="flex items-center cursor-pointer"
+                      >
                         <XCircle className="h-4 w-4 mr-2 text-red-600" />
                         Do Not Recommend
                       </Label>
@@ -347,7 +440,9 @@ export default function TeleverificationPage() {
                     placeholder="Provide detailed feedback about the student's performance, strengths, areas for improvement, and any other relevant observations..."
                     className="min-h-[120px]"
                     value={formData.comments}
-                    onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, comments: e.target.value })
+                    }
                     required
                   />
                 </div>
@@ -362,15 +457,21 @@ export default function TeleverificationPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <input
+                    title="Follow-up required"
+                    placeholder="Check if follow-up is needed"
                     type="checkbox"
                     id="followUpRequired"
                     checked={formData.followUpRequired}
-                    onChange={(e) => setFormData({ ...formData, followUpRequired: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        followUpRequired: e.target.checked,
+                      })
+                    }
                     className="rounded border-gray-300"
                   />
                   <Label htmlFor="followUpRequired">Follow-up required</Label>
                 </div>
-                
                 {formData.followUpRequired && (
                   <div>
                     <Label htmlFor="followUpNotes">Follow-up Notes</Label>
@@ -379,7 +480,12 @@ export default function TeleverificationPage() {
                       placeholder="Specify what follow-up is needed and when..."
                       className="min-h-[80px]"
                       value={formData.followUpNotes}
-                      onChange={(e) => setFormData({ ...formData, followUpNotes: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          followUpNotes: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 )}

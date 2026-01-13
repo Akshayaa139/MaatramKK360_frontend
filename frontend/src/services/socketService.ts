@@ -14,13 +14,28 @@ class SocketService {
 
   private async initializeSocket() {
     try {
-      const session = await getSession();
-      if (!session?.accessToken) {
+      let token: string | undefined;
+
+      // 1. Try sessionStorage first (for multi-tab support)
+      if (typeof window !== "undefined") {
+        const stored = sessionStorage.getItem("token");
+        if (stored) token = stored;
+      }
+
+      // 2. Fallback to next-auth session
+      if (!token) {
+        const session = await getSession();
+        if (session?.accessToken) {
+          token = session.accessToken;
+        }
+      }
+
+      if (!token) {
         console.log('No access token available, socket will be initialized on login');
         return;
       }
 
-      this.connect(session.accessToken);
+      this.connect(token);
     } catch (error) {
       console.error('Error initializing socket:', error);
     }
